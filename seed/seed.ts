@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
 import User from "../src/models/User";
-import Group from "../src/models/Group";
 import Bot from "../src/models/Bot";
 import Signal from "../src/models/Signal";
 
@@ -31,48 +30,13 @@ async function seed() {
     });
     console.log("Seeded test user");
 
-    // 2. Seed groups
-    const groups = [
-      {
-        _id: new mongoose.Types.ObjectId("686d41e27ed8842eb85b658b"),
-        name: "Commodities",
-        createdAt: new Date("2025-07-08T16:05:54.480Z"),
-        updatedAt: new Date("2025-07-08T16:05:54.480Z"),
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d41e97ed8842eb85b658f"),
-        name: "Currency",
-        createdAt: new Date("2025-07-08T16:06:01.360Z"),
-        updatedAt: new Date("2025-07-08T16:06:01.360Z"),
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d41f57ed8842eb85b6593"),
-        name: "Stocks",
-        createdAt: new Date("2025-07-08T16:06:13.366Z"),
-        updatedAt: new Date("2025-07-08T16:06:13.366Z"),
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d41fc7ed8842eb85b6597"),
-        name: "Crypto",
-        createdAt: new Date("2025-07-08T16:06:20.325Z"),
-        updatedAt: new Date("2025-07-08T16:06:20.325Z"),
-      },
-    ];
-    for (const group of groups) {
-      await Group.findOneAndUpdate({ _id: group._id }, group, {
-        upsert: true,
-        setDefaultsOnInsert: true,
-      });
-    }
-    console.log("Seeded groups");
-
-    // 3. Seed bots (assign to correct group by name)
+    // 2. Seed bots
     const bots = [
       {
         _id: new mongoose.Types.ObjectId("686d3f381d179df0fd5e5479"),
-        name: "XAU/USD",
+        name: "Forex",
         description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Apple stock.",
+          "A high-frequency trading bot focused on global currency pairs. It identifies arbitrage opportunities, monitors geopolitical signals, and automates trades in the foreign exchange market.",
         recommendedCapital: 100,
         performanceDuration: "1M",
         script: "USD",
@@ -82,9 +46,9 @@ async function seed() {
       },
       {
         _id: new mongoose.Types.ObjectId("686d3f381d179df0fd5e5480"),
-        name: "XAG/USD",
+        name: "Comex",
         description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Apple stock.",
+          "A smart trading bot optimized for precious metals like gold and silver. It uses supply-demand models, macroeconomic indicators, and trend momentum to generate trading signals.",
         recommendedCapital: 100,
         performanceDuration: "1M",
         script: "USD",
@@ -94,9 +58,9 @@ async function seed() {
       },
       {
         _id: new mongoose.Types.ObjectId("686d3f381d179df0fd5e5483"),
-        name: "Crude Oil",
+        name: "Crypto",
         description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Apple stock.",
+          "An AI-powered trading bot specialized in cryptocurrency markets. It adapts to high volatility, leverages sentiment analysis, and executes real-time trades across major digital assets.",
         recommendedCapital: 100,
         performanceDuration: "1M",
         script: "USD",
@@ -106,111 +70,27 @@ async function seed() {
       },
       {
         _id: new mongoose.Types.ObjectId("686d3f381d179df0fd5e5481"),
-        name: "EUR/USD",
+        name: "US Stocks",
         description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Apple stock.",
+          "A data-driven trading bot designed for the US equity market. It analyzes financial reports, earnings trends, and market sentiment to execute trades on top-performing stocks.",
         recommendedCapital: 100,
         performanceDuration: "1M",
         script: "USD",
         createdAt: new Date("2025-07-08T15:54:32.821Z"),
         updatedAt: new Date("2025-07-08T16:02:49.296Z"),
         groupName: "Currency",
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d3f381d179df0fd5e5482"),
-        name: "JPY/USD",
-        description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Apple stock.",
-        recommendedCapital: 100,
-        performanceDuration: "1M",
-        script: "USD",
-        createdAt: new Date("2025-07-08T15:54:32.821Z"),
-        updatedAt: new Date("2025-07-08T16:02:49.296Z"),
-        groupName: "Currency",
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d3f381d179df0fd5e5484"),
-        name: "AUD/USD",
-        description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Apple stock.",
-        recommendedCapital: 100,
-        performanceDuration: "1M",
-        script: "USD",
-        createdAt: new Date("2025-07-08T15:54:32.821Z"),
-        updatedAt: new Date("2025-07-08T16:02:49.296Z"),
-        groupName: "Currency",
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d3f381d179df0fd5e5471"),
-        name: "Apple",
-        description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Apple stock.",
-        recommendedCapital: 100,
-        performanceDuration: "1M",
-        script: "USD",
-        createdAt: new Date("2025-07-08T15:54:32.821Z"),
-        updatedAt: new Date("2025-07-08T16:02:49.296Z"),
-        groupName: "Stocks",
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d3f3e1d179df0fd5e5475"),
-        name: "Amazon",
-        description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Amazon stock.",
-        recommendedCapital: 100,
-        performanceDuration: "1M",
-        script: "USD",
-        createdAt: new Date("2025-07-08T15:54:38.984Z"),
-        updatedAt: new Date("2025-07-08T16:02:49.314Z"),
-        groupName: "Stocks",
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d3f441d179df0fd5e5479"),
-        name: "Microsoft",
-        description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for Microsoft stock.",
-        recommendedCapital: 100,
-        performanceDuration: "1M",
-        script: "USD",
-        createdAt: new Date("2025-07-08T15:54:44.821Z"),
-        updatedAt: new Date("2025-07-08T16:02:49.331Z"),
-        groupName: "Stocks",
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d3f4d1d179df0fd5e547d"),
-        name: "BTC/USD",
-        description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for BTC/USD.",
-        recommendedCapital: 100,
-        performanceDuration: "1M",
-        script: "USD",
-        createdAt: new Date("2025-07-08T15:54:53.687Z"),
-        updatedAt: new Date("2025-07-08T16:02:49.352Z"),
-        groupName: "Crypto",
-      },
-      {
-        _id: new mongoose.Types.ObjectId("686d3f521d179df0fd5e5481"),
-        name: "ETH/USD",
-        description:
-          "An advanced trading bot that analyzes market trends, predicts price movements, and executes trades for ETH/USD.",
-        recommendedCapital: 100,
-        performanceDuration: "1M",
-        script: "USD",
-        createdAt: new Date("2025-07-08T15:54:58.700Z"),
-        updatedAt: new Date("2025-07-08T16:02:49.371Z"),
-        groupName: "Crypto",
       },
     ];
 
     const seededBots: any[] = [];
     for (const bot of bots) {
-      const group = await Group.findOne({ name: bot.groupName });
-      if (!group) throw new Error(`Group not found for bot: ${bot.name}`);
-      const seededBot = await Bot.findOneAndUpdate(
-        { _id: bot._id },
-        { ...bot, groupId: group._id },
-        { upsert: true, setDefaultsOnInsert: true, new: true }
-      );
+      // Remove groupName from bot data before seeding
+      const { groupName, ...botData } = bot;
+      const seededBot = await Bot.findOneAndUpdate({ _id: bot._id }, botData, {
+        upsert: true,
+        setDefaultsOnInsert: true,
+        new: true,
+      });
       seededBots.push(seededBot);
     }
     console.log("Seeded bots");

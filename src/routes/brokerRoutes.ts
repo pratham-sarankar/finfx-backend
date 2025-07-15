@@ -3,10 +3,11 @@ import { auth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import axios from "axios";
 import * as crypto from "crypto";
+import { getAllBrokers, addBroker, deleteBroker } from "../controllers/brokerController";
 
 const router = express.Router();
 
-// All broker routes require authentication
+
 router.use(auth);
 
 const BASE_URL = "https://api.binance.com";
@@ -21,15 +22,12 @@ interface BinanceAccountResponse {
   balances: BinanceBalance[];
 }
 
-/**
- * Get account information from Binance API
- */
+
 async function getAccountInfo(apiKey: string, apiSecret: string) {
   const endpoint = "/api/v3/account";
   const timestamp = Date.now();
   const queryString = `timestamp=${timestamp}`;
 
-  // Create the signature
   const signature = crypto
     .createHmac("sha256", apiSecret)
     .update(queryString)
@@ -49,9 +47,7 @@ async function getAccountInfo(apiKey: string, apiSecret: string) {
   }
 }
 
-/**
- * Get asset balance from Delta Exchange
- */
+
 async function getAssetBalance(apiKey: string, apiSecret: string) {
   try {
     const response = await axios.post(
@@ -164,5 +160,11 @@ router.post("/asset-delta-balance", async (req, res) => {
     });
   }
 });
+
+// Broker CRUD routes
+router.get("/brokerAll", getAllBrokers); 
+router.post("/addBroker", addBroker);   
+router.delete("/deleteBroker/:id", deleteBroker);
+
 
 export default router;

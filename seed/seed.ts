@@ -6,6 +6,7 @@ import path from "path";
 import User from "../src/models/User";
 import Bot from "../src/models/Bot";
 import Signal from "../src/models/Signal";
+import Broker from "../src/models/Broker";
 
 async function seed() {
   try {
@@ -95,6 +96,24 @@ async function seed() {
     }
     console.log("Seeded bots");
 
+    // 3. Seed brokers
+    const brokersPath = path.join(__dirname, "data", "brokers.json");
+    const brokersData = JSON.parse(fs.readFileSync(brokersPath, "utf8"));
+
+    console.log(`Loading ${brokersData.length} brokers from brokers.json`);
+
+    try {
+      await Broker.insertMany(brokersData, { ordered: false });
+      console.log("Seeded brokers");
+    } catch (error: any) {
+      if (error.code === 11000) {
+        // Duplicate key error, ignore or log
+        console.warn("Some brokers already exist, skipping duplicates.");
+      } else {
+        console.error("Failed to seed brokers:", error);
+      }
+    }
+
     // 4. Seed signals for all bots
     const signalsPath = path.join(__dirname, "data", "signals.json");
     const signalsData = JSON.parse(fs.readFileSync(signalsPath, "utf8"));
@@ -160,3 +179,5 @@ async function seed() {
 }
 
 seed();
+
+

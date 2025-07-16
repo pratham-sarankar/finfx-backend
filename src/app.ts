@@ -52,7 +52,7 @@ app.use("/api/kyc", kycRoutes);
 app.use("/api/bots", botRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/signals", signalRoutes);
-app.use("/api/broker", brokerRoutes);
+app.use("/api/brokers", brokerRoutes);
 
 // Health check endpoint
 app.get("/", (_req: Request, res: Response) => {

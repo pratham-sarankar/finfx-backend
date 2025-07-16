@@ -162,9 +162,9 @@ router.post("/asset-delta-balance", async (req, res) => {
 });
 
 // Broker CRUD routes
-router.get("/brokerAll", getAllBrokers); 
-router.post("/addBroker", addBroker);   
-router.delete("/deleteBroker/:id", deleteBroker);
+router.get("/", getAllBrokers); 
+router.post("/", addBroker);   
+router.delete("/:id", deleteBroker);
 
 
 export default router;

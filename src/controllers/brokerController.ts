@@ -16,6 +16,9 @@ export const addBroker = async (req: Request, res: Response) => {
     if (!name) {
       return res.status(400).json({ success: false, message: "Name is required" });
     }
+    if (typeof name !== 'string' || name.trim().length < 2) {
+      return res.status(400).json({ success: false, message: "Name must be a valid string with at least 2 characters" });
+    }
     const broker = await Broker.create({ name });
     return res.status(201).json({ success: true, data: broker });
   } catch (error: any) {

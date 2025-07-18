@@ -6,26 +6,26 @@ import {
   updatePackage,
   deletePackage
 } from "../controllers/packageController";
-import { auth } from "../middleware/auth";
+import { validateObjectId } from "../middleware/validateObjectId";
 
 
 const router = express.Router();
 
-router.use(auth);
+
 
 // Get all packages
 router.get("/", getPackages);
 
 // single package by ID
-router.get("/:id", getPackageById);
+router.get("/:id",validateObjectId, getPackageById);
 
 // Create a new package 
 router.post("/", createPackage);
 
 // Update a package 
-router.put("/:id", updatePackage);
+router.put("/:id",validateObjectId, updatePackage);
 
 // Delete a package 
-router.delete("/:id", deletePackage);
+router.delete("/:id",validateObjectId, deletePackage);
 
 export default router;

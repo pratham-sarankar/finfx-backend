@@ -5,7 +5,7 @@ import { Request, Response } from "express";
 export const createBotPackage = async (req: Request, res: Response) => {
   try {
     const { botId, packageId, price } = req.body;
-    if (!botId || !packageId || !price || price <= 0) {
+    if (!botId || !packageId || price === undefined || price === null || typeof price !== 'number' || price <= 0) {
       return res.status(400).json({ message: "botId, packageId, and valid price are required." });
     }
     const existing = await BotPackage.findOne({ botId, packageId });
@@ -14,9 +14,9 @@ export const createBotPackage = async (req: Request, res: Response) => {
     }
     const botPackage = new BotPackage({ botId, packageId, price });
     await botPackage.save();
-  return  res.status(201).json(botPackage);
+    return res.status(201).json(botPackage);
   } catch (err) {
- return   res.status(500).json({ message: "Server error", error: (err as Error).message });
+    return res.status(500).json({ message: "Server error", error: (err as Error).message });
   }
 };
 
@@ -45,21 +45,23 @@ export const getBotPackageById = async (req: Request, res: Response) => {
 export const updateBotPackage = async (req: Request, res: Response) => {
   try {
     const { price } = req.body;
-    if(!price){
-      return res.status(400).json({message:"Please provide valid price"})
+    if (price === undefined || price === null) {
+      return res.status(400).json({ message: "Please provide valid price" });
     }
-    if (price !== undefined && price <= 0) {
-      return res.status(400).json({ message: "Price must be greater than 0." });
+    if (typeof price !== 'number' || price < 0) {
+      return res.status(400).json({ message: "Price must be a valid non-negative number." });
     }
     const botPackage = await BotPackage.findByIdAndUpdate(
       req.params.id,
       { $set: { price } },
       { new: true, runValidators: true }
     );
-    if (!botPackage) return res.status(404).json({ message: "BotPackage not found" });
-   return res.json(botPackage);
+    if (!botPackage) {
+      return res.status(404).json({ message: "BotPackage not found" });
+    }
+    return res.json(botPackage);
   } catch (err) {
-  return  res.status(500).json({ message: "Server error", error: (err as Error).message });
+    return res.status(500).json({ message: "Server error", error: (err as Error).message });
   }
 };
 

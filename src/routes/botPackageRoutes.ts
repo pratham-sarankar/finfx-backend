@@ -7,11 +7,11 @@ import {
   deleteBotPackage,
   getBotPackageByBotId
 } from "../controllers/botPackageController";
-// import { auth } from "../middleware/auth";
+import { auth } from "../middleware/auth";
 
 const router = express.Router();
 
-// router.use(auth);
+router.use(auth);
 
 // Get all botPackages
 router.get("/", getBotPackages);

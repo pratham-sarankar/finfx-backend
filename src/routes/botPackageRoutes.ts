@@ -4,29 +4,31 @@ import {
   getBotPackages,
   getBotPackageById,
   updateBotPackage,
-  deleteBotPackage
+  deleteBotPackage,
+  getBotPackageByBotId
 } from "../controllers/botPackageController";
 // import { auth } from "../middleware/auth";
-import { validateObjectId } from "../middleware/validateObjectId";
 
 const router = express.Router();
 
 // router.use(auth);
 
-
-// Get all bot packages
+// Get all botPackages
 router.get("/", getBotPackages);
 
-// Get a single bot package by ID
-router.get("/:id",validateObjectId, getBotPackageById);
+// Get all bot packages for a specific bot
+router.get("/bot/:botId", getBotPackageByBotId);
+
+// Get a single bot package by its own ID
+router.get("/id/:id", getBotPackageById);
 
 // Create new bot package 
 router.post("/", createBotPackage);
 
 // Update a bot package 
-router.put("/:id", validateObjectId, updateBotPackage);
+router.put("/:id", updateBotPackage);
 
 // Delete a bot package 
-router.delete("/:id", validateObjectId, deleteBotPackage);
+router.delete("/:id", deleteBotPackage);
 
 export default router;

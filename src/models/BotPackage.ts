@@ -14,13 +14,7 @@ const botPackageSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: true,
-    min: 0, // Allow free packages
-    validate: {
-      validator: function(value: number) {
-        return Number.isFinite(value) && value >= 0;
-      },
-      message: 'Price must be a valid non-negative number'
-    }
+    min: [0, 'Price must be a non-negative number']
   }
 }, {
   timestamps: true

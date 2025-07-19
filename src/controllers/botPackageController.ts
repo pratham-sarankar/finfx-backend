@@ -10,28 +10,25 @@ export const createBotPackage = async (req: Request, res: Response, next: NextFu
   try {
     const { botId, packageId, price } = req.body;
     if (!botId || !packageId || price === undefined || price === null || typeof price !== 'number' || price <= 0) {
-      throw new AppError("botId, packageId, and valid price are required.", 400, "BOTPACKAGE_REQUIRED_FIELDS");
+      throw new AppError("Please provide all required fields.", 400, "missing-required-fields");
     }
     // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(botId)) {
-      throw new AppError("Invalid botId format.", 400, "INVALID_BOT_ID_FORMAT");
-    }
-    if (!mongoose.Types.ObjectId.isValid(packageId)) {
-      throw new AppError("Invalid packageId format.", 400, "INVALID_PACKAGE_ID_FORMAT");
+    if (!mongoose.Types.ObjectId.isValid(botId) || !mongoose.Types.ObjectId.isValid(packageId)) {
+      throw new AppError("Invalid request. Please try again.", 400, "invalid-request");
     }
     // Check if botId exists
     const botExists = await Bot.findById(botId);
     if (!botExists) {
-      throw new AppError("Bot not found.", 404, "BOT_NOT_FOUND");
+      throw new AppError("The requested bot could not be found.", 404, "bot-not-found");
     }
     // Check if packageId exists
     const packageExists = await Package.findById(packageId);
     if (!packageExists) {
-      throw new AppError("Package not found.", 404, "PACKAGE_NOT_FOUND");
+      throw new AppError("The requested package could not be found.", 404, "package-not-found");
     }
     const existing = await BotPackage.findOne({ botId, packageId });
     if (existing) {
-      throw new AppError("BotPackage for this bot and package already exists.", 409, "BOTPACKAGE_EXISTS");
+      throw new AppError("This combination already exists.", 409, "botpackage-already-exists");
     }
     const botPackage = new BotPackage({ botId, packageId, price });
     await botPackage.save();
@@ -62,7 +59,7 @@ export const getBotPackages = async (_: Request, res: Response, next: NextFuncti
 export const getBotPackageById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const botPackage = await BotPackage.findById(req.params.id).populate('botId').populate('packageId');
-    if (!botPackage) throw new AppError("BotPackage not found", 404, "BOTPACKAGE_NOT_FOUND");
+    if (!botPackage) throw new AppError("The requested bot package could not be found.", 404, "botpackage-not-found");
     return res.status(200).json({
       success: true,
       data: botPackage
@@ -77,10 +74,10 @@ export const updateBotPackage = async (req: Request, res: Response, next: NextFu
   try {
     const { price } = req.body;
     if (price === undefined || price === null) {
-      throw new AppError("Please provide valid price", 400, "BOTPACKAGE_PRICE_REQUIRED");
+      throw new AppError("Please provide a valid price.", 400, "missing-required-fields");
     }
     if (typeof price !== 'number' || price < 0) {
-      throw new AppError("Price must be a valid non-negative number.", 400, "BOTPACKAGE_INVALID_PRICE");
+      throw new AppError("Please provide a valid price.", 400, "invalid-price");
     }
     const botPackage = await BotPackage.findByIdAndUpdate(
       req.params.id,
@@ -88,7 +85,7 @@ export const updateBotPackage = async (req: Request, res: Response, next: NextFu
       { new: true, runValidators: true }
     );
     if (!botPackage) {
-      throw new AppError("BotPackage not found", 404, "BOTPACKAGE_NOT_FOUND");
+      throw new AppError("The requested bot package could not be found.", 404, "botpackage-not-found");
     }
     return res.status(200).json({
       success: true,
@@ -104,7 +101,7 @@ export const updateBotPackage = async (req: Request, res: Response, next: NextFu
 export const deleteBotPackage = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const botPackage = await BotPackage.findByIdAndDelete(req.params.id);
-    if (!botPackage) throw new AppError("BotPackage not found", 404, "BOTPACKAGE_NOT_FOUND");
+    if (!botPackage) throw new AppError("The requested bot package could not be found.", 404, "botpackage-not-found");
     return res.status(200).json({
       success: true,
       message: "BotPackage deleted"
@@ -119,23 +116,23 @@ export const getBotPackageByBotId = async (req: Request, res: Response, next: Ne
     const botId = req.params.botId;
    
    if (!botId){
-      throw new AppError("Please provide Bot Id",400,"ID_NOT_FOUND")
+      throw new AppError("Please provide all required fields.",400,"missing-required-fields")
     }
     
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(botId)) {
-      throw new AppError("Invalid botId format.", 400, "INVALID_BOT_ID");
+      throw new AppError("Invalid request. Please try again.", 400, "invalid-request");
     }
     // Check if bot exists
     const botExists = await Bot.findById(botId);
     if (!botExists) {
-      throw new AppError("Bot not found.", 404, "BOT_NOT_FOUND");
+      throw new AppError("The requested bot could not be found.", 404, "bot-not-found");
     }
     // Find all BotPackages for this bot
     const botPackages = await BotPackage.find({ botId }).populate('botId').populate('packageId');
     return res.status(200).json({
       success: true,
-      message: "BotPackages for the given botId fetched successfully.",
+      message: "BotPackages for the given bot fetched successfully.",
       data: botPackages
     });
   } catch (error) {

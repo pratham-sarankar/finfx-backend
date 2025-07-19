@@ -1,16 +1,17 @@
 import Package from "../models/Package";
 import { NextFunction, Request, Response } from "express";
+import { AppError } from "../middleware/errorHandler";
 
 // Create a new package
 export const createPackage = async (req: Request, res: Response,next:NextFunction) => {
   try {
     const { name, duration } = req.body;
     if (!name || !duration || duration <= 0) {
-      return res.status(400).json({ success: false, message: "Name and valid duration are required." });
+      throw new AppError("Please provide all required fields.", 400, "missing-required-fields");
     }
     const existing = await Package.findOne({ name });
     if (existing) {
-      return res.status(409).json({ success: false, message: "Package with this name already exists." });
+      throw new AppError("A package with this name already exists.", 409, "package-already-exists");
     }
     const pkg = new Package({ name, duration });
     await pkg.save();
@@ -34,7 +35,7 @@ export const getPackages = async (_: Request, res: Response,next:NextFunction) =
 export const getPackageById = async (req: Request, res: Response,next:NextFunction) => {
   try {
     const pkg = await Package.findById(req.params.id);
-    if (!pkg) return res.status(404).json({ success: false, message: "Package not found" });
+    if (!pkg) throw new AppError("The requested package could not be found.", 404, "package-not-found");
     return res.status(200).json({ success: true, data: pkg });
   } catch (err) {
     return next(err)
@@ -46,13 +47,13 @@ export const updatePackage = async (req: Request, res: Response , next:NextFunct
   try {
     const { name, duration } = req.body;
     if (duration !== undefined && duration <= 0) {
-      return res.status(400).json({ success: false, message: "Duration must be greater than 0." });
+      throw new AppError("Please provide a valid duration.", 400, "invalid-duration");
     }
     if (name !== undefined && name.trim() === "") {
-      return res.status(400).json({ success: false, message: "Name cannot be empty." });
+      throw new AppError("Please provide a valid name.", 400, "invalid-name");
     }
     if (name === undefined && duration === undefined) {
-      return res.status(400).json({ success: false, message: "Please provide at least one field to update (name or duration)." });
+      throw new AppError("Please provide information to update.", 400, "missing-update-fields");
     }
     const updateFields: any = {};
     if (name !== undefined) updateFields.name = name;
@@ -62,11 +63,11 @@ export const updatePackage = async (req: Request, res: Response , next:NextFunct
       { $set: updateFields },
       { new: true, runValidators: true }
     );
-    if (!pkg) return res.status(404).json({ success: false, message: "Package not found" });
+    if (!pkg) throw new AppError("The requested package could not be found.", 404, "package-not-found");
     return res.status(200).json({ success: true, message: "Package updated", data: pkg });
   } catch (err) {
     if ((err as any).code === 11000) {
-      return res.status(409).json({ success: false, message: "Package name must be unique." });
+      throw new AppError("A package with this name already exists.", 409, "package-already-exists");
     }
     return next(err)
   }
@@ -76,7 +77,7 @@ export const updatePackage = async (req: Request, res: Response , next:NextFunct
 export const deletePackage = async (req: Request, res: Response,next:NextFunction) => {
   try {
     const pkg = await Package.findByIdAndDelete(req.params.id);
-    if (!pkg) return res.status(404).json({ success: false, message: "Package not found" });
+    if (!pkg) throw new AppError("The requested package could not be found.", 404, "package-not-found");
     return res.status(200).json({ success: true, message: "Package deleted" });
   } catch (err) {
     return next(err)

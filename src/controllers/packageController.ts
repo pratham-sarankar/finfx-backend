@@ -1,8 +1,8 @@
 import Package from "../models/Package";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 
 // Create a new package
-export const createPackage = async (req: Request, res: Response) => {
+export const createPackage = async (req: Request, res: Response,next:NextFunction) => {
   try {
     const { name, duration } = req.body;
     if (!name || !duration || duration <= 0) {
@@ -16,33 +16,33 @@ export const createPackage = async (req: Request, res: Response) => {
     await pkg.save();
     return res.status(201).json({ success: true, message: "Package created", data: pkg });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error", error: err });
+    return next(err)
   }
 };
 
 // Get all packages
-export const getPackages = async (_: Request, res: Response) => {
+export const getPackages = async (_: Request, res: Response,next:NextFunction) => {
   try {
     const packages = await Package.find();
     return res.status(200).json({ success: true, data: packages });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error", error: err });
+    return next(err)
   }
 };
 
 // Get a single package by ID
-export const getPackageById = async (req: Request, res: Response) => {
+export const getPackageById = async (req: Request, res: Response,next:NextFunction) => {
   try {
     const pkg = await Package.findById(req.params.id);
     if (!pkg) return res.status(404).json({ success: false, message: "Package not found" });
     return res.status(200).json({ success: true, data: pkg });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error", error: err });
+    return next(err)
   }
 };
 
 // Update a package
-export const updatePackage = async (req: Request, res: Response) => {
+export const updatePackage = async (req: Request, res: Response , next:NextFunction) => {
   try {
     const { name, duration } = req.body;
     if (duration !== undefined && duration <= 0) {
@@ -68,17 +68,17 @@ export const updatePackage = async (req: Request, res: Response) => {
     if ((err as any).code === 11000) {
       return res.status(409).json({ success: false, message: "Package name must be unique." });
     }
-    return res.status(500).json({ success: false, message: "Server error", error: (err as Error).message });
+    return next(err)
   }
 };
 
 // Delete a package
-export const deletePackage = async (req: Request, res: Response) => {
+export const deletePackage = async (req: Request, res: Response,next:NextFunction) => {
   try {
     const pkg = await Package.findByIdAndDelete(req.params.id);
     if (!pkg) return res.status(404).json({ success: false, message: "Package not found" });
     return res.status(200).json({ success: true, message: "Package deleted" });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error", error: (err as Error).message });
+    return next(err)
   }
 };

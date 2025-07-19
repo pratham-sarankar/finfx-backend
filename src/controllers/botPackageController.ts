@@ -119,12 +119,12 @@ export const getBotPackageByBotId = async (req: Request, res: Response, next: Ne
     const botId = req.params.botId;
    
    if (!botId){
-      throw new AppError("Please provide Bot Id",400,"BOT_ID_NOT_FOUND")
+      throw new AppError("Please provide Bot Id",400,"ID_NOT_FOUND")
     }
     
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(botId)) {
-      throw new AppError("Invalid botId format.", 400, "INVALID_BOT_ID_FORMAT");
+      throw new AppError("Invalid botId format.", 400, "INVALID_BOT_ID");
     }
     // Check if bot exists
     const botExists = await Bot.findById(botId);

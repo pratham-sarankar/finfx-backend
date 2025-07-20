@@ -6,7 +6,12 @@ import { AppError } from "../middleware/errorHandler";
 export const getAllBrokers = async (_: Request, res: Response, next: NextFunction) => {
   try {
     const brokers = await Broker.find({});
-    return res.status(200).json({ success: true, data: brokers });
+    const transformedBrokers = brokers.map(broker => {
+      const obj = broker.toObject();
+      const { _id, __v, ...rest } = obj;
+      return { id: _id, ...rest };
+    });
+    return res.status(200).json({ success: true, data: transformedBrokers });
   } catch (error: any) {
     return next(new AppError("Something went wrong. Please try again later.", 500, "internal-server-error"));
   }

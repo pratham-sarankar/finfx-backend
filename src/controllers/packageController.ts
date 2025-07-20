@@ -25,7 +25,12 @@ export const createPackage = async (req: Request, res: Response,next:NextFunctio
 export const getPackages = async (_: Request, res: Response,next:NextFunction) => {
   try {
     const packages = await Package.find();
-    return res.status(200).json({ success: true, data: packages });
+    const transformedPackages = packages.map(pkg => {
+      const obj = pkg.toObject();
+      const { _id, __v, ...rest } = obj;
+      return { id: _id, ...rest };
+    });
+    return res.status(200).json({ success: true, data: transformedPackages });
   } catch (err) {
     return next(err)
   }
@@ -34,9 +39,11 @@ export const getPackages = async (_: Request, res: Response,next:NextFunction) =
 // Get a single package by ID
 export const getPackageById = async (req: Request, res: Response,next:NextFunction) => {
   try {
-    const pkg = await Package.findById(req.params.id);
+    const pkg = await Package.findById(req.params.id).select("-__v")
     if (!pkg) throw new AppError("The requested package could not be found.", 404, "package-not-found");
-    return res.status(200).json({ success: true, data: pkg });
+    const obj = pkg.toObject();
+    const { _id, __v, ...rest } = obj;
+    return res.status(200).json({ success: true, data: { id: _id, ...rest } });
   } catch (err) {
     return next(err)
   }

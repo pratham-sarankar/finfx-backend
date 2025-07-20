@@ -142,9 +142,33 @@ export const getBotPackageById = async (
         404,
         "botpackage-not-found"
       );
+
+      const botPackageObj = botPackage.toObject();
+
+const transformedBotPackage: any = {
+  id: botPackageObj._id,
+  bot: {
+    ...botPackageObj.botId,
+    id: botPackageObj.botId._id,
+  },
+  package: {
+    ...botPackageObj.packageId,
+    id: botPackageObj.packageId._id,
+  },
+  price: botPackageObj.price,
+};
+
+delete transformedBotPackage.bot._id;
+delete transformedBotPackage.bot.__v;
+delete transformedBotPackage.package._id;
+delete transformedBotPackage.package.__v;
+delete transformedBotPackage.botId;
+delete transformedBotPackage.packageId;
+delete transformedBotPackage._id;
+
     return res.status(200).json({
       success: true,
-      data: botPackage,
+      data: transformedBotPackage,
     });
   } catch (err) {
     return next(err);

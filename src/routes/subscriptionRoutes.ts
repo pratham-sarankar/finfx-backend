@@ -3,6 +3,7 @@ import { auth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import BotSubscription from "../models/BotSubscription";
 import Bot from "../models/Bot";
+import BotPackage from "../models/BotPackage";
 
 const router = express.Router();
 
@@ -16,18 +17,39 @@ router.use(auth);
  */
 router.post("/", async (req, res, next) => {
   try {
-    const { botId } = req.body;
+    const { botId,botPackageId,lotSize } = req.body;
 
     // Validate required field
     if (!botId) {
       throw new AppError("Bot ID is required", 400, "missing-bot-id");
     }
+    if (!botPackageId) {
+      throw new AppError("Bot Package ID is required", 400, "missing-bot-package-id");
+    } 
+    
+    if (!lotSize) {
+      throw new AppError("Lot Size is required", 400, "missing-lot-size");
+    }
+
+    if (typeof lotSize !== "number" || lotSize < 0.1) {
+      throw new AppError("Lot Size must be at least 0.1", 400, "invalid-lot-size");
+    }
+    
 
     // Check if bot exists
     const bot = await Bot.findById(botId);
     if (!bot) {
       throw new AppError("Bot not found", 404, "bot-not-found");
     }
+
+    // Check if botPackage exists
+
+    const existingBotPackage = await BotPackage.findById(botPackageId);
+
+    if(!existingBotPackage){
+      throw new AppError("BotPackage not found ", 404, "bot-package-not-found");
+    }
+
 
     // Check if user is already subscribed to this bot
     const existingSubscription = await BotSubscription.findOne({
@@ -73,6 +95,8 @@ router.post("/", async (req, res, next) => {
     const subscription = await BotSubscription.create({
       userId: req.user._id,
       botId: botId,
+      botPackageId:botPackageId,
+      lotSize:lotSize
     });
 
     // Transform response
@@ -157,6 +181,7 @@ router.get("/", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
+    
 
     const subscription = await BotSubscription.findOne({
       _id: id,
@@ -300,6 +325,8 @@ router.get("/check/:botId", async (req, res, next) => {
               status: subscription.status,
               subscribedAt: subscription.subscribedAt,
               cancelledAt: subscription.cancelledAt,
+              botPackageId: subscription.botPackageId,
+              lotSize: subscription.lotSize,
             }
           : null,
       },

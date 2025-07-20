@@ -1,60 +1,53 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import Broker from "../models/Broker";
 import mongoose from "mongoose";
+import { AppError } from "../middleware/errorHandler";
 
-export const getAllBrokers = async (_: Request, res: Response) => {
+export const getAllBrokers = async (_: Request, res: Response, next: NextFunction) => {
   try {
     const brokers = await Broker.find({});
-    return res.status(200).json({ success: true, data: brokers });
+    const transformedBrokers = brokers.map(broker => {
+      const obj = broker.toObject();
+      const { _id, __v, ...rest } = obj;
+      return { id: _id, ...rest };
+    });
+    return res.status(200).json({ success: true, data: transformedBrokers });
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+    return next(new AppError("Something went wrong. Please try again later.", 500, "internal-server-error"));
   }
 };
 
-export const addBroker = async (req: Request, res: Response) => {
+export const addBroker = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name } = req.body;
     if (!name) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Name is required" });
+      throw new AppError("Please provide all required fields.", 400, "missing-required-fields");
     }
     if (typeof name !== "string" || name.trim().length < 2) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Name must be a valid string with at least 2 characters",
-        });
+      throw new AppError("Please provide a valid name.", 400, "invalid-name");
     }
     const broker = await Broker.create({ name });
-    return res.status(201).json({ success: true, data: broker });
-  } catch (error: any) {
-    if (error.code === 11000) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Broker already exists" });
+    return res.status(201).json({ success: true, message: "Broker created", data: broker });
+  } catch (err: any) {
+    if (err.code === 11000) {
+      return next(new AppError("A broker with this name already exists.", 409, "broker-already-exists"));
     }
-    return res.status(500).json({ success: false, message: error.message });
+    return next(err)
   }
 };
 
-export const deleteBroker = async (req: Request, res: Response) => {
+export const deleteBroker = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid broker ID format" });
+      throw new AppError("Invalid request. Please try again.", 400, "invalid-request");
     }
     const broker = await Broker.findByIdAndDelete(id);
     if (!broker) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Broker not found" });
+      throw new AppError("The requested broker could not be found.", 404, "broker-not-found");
     }
     return res.status(200).json({ success: true, message: "Broker deleted" });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+  } catch (err: any) {
+    return next(err)
   }
 };

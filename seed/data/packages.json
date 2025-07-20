@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Monthly",
+    "duration": 30
+  },
+  {
+    "name": "Quarterly",
+    "duration": 90
+  },
+  {
+    "name": "Half Yearly",
+    "duration": 180
+  },
+  {
+    "name": "Yearly",
+    "duration": 365
+  }
+]

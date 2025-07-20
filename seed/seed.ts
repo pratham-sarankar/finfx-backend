@@ -7,6 +7,8 @@ import User from "../src/models/User";
 import Bot from "../src/models/Bot";
 import Signal from "../src/models/Signal";
 import Broker from "../src/models/Broker";
+import Package from "../src/models/Package";
+import BotPackage from "../src/models/BotPackage";
 
 async function seed() {
   try {
@@ -168,6 +170,40 @@ async function seed() {
     }
 
     console.log("Seeded signals for all bots");
+
+    // 5. Seed packages from packages.json instead of hardcoded array
+    const packagesPath = path.join(__dirname, "data", "packages.json");
+    const packagesData = JSON.parse(fs.readFileSync(packagesPath, "utf8"));
+    const seededPackages: any[] = [];
+    for (const pkg of packagesData) {
+      const seededPkg = await Package.findOneAndUpdate(
+        { name: pkg.name },
+        pkg,
+        { upsert: true, setDefaultsOnInsert: true, new: true }
+      );
+      seededPackages.push(seededPkg);
+    }
+    console.log("Seeded packages from packages.json");
+
+    // 6. Seed initial BotPackage prices for each bot and package
+    // Example price logic: Monthly=100, Quarterly=270, Half Yearly=500, Yearly=900 (can be customized)
+    const priceMap: Record<string, number> = {
+      "Monthly": 100,
+      "Quarterly": 270,
+      "Half Yearly": 500,
+      "Yearly": 900,
+    };
+    for (const bot of seededBots) {
+      for (const pkg of seededPackages) {
+        const price = priceMap[pkg.name] || 100;
+        await BotPackage.findOneAndUpdate(
+          { botId: bot._id, packageId: pkg._id },
+          { botId: bot._id, packageId: pkg._id, price },
+          { upsert: true, setDefaultsOnInsert: true }
+        );
+      }
+    }
+    console.log("Seeded initial BotPackage prices for each bot");
 
     await mongoose.disconnect();
     console.log("Disconnected from MongoDB");

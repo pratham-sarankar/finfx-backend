@@ -14,6 +14,8 @@ import botRoutes from "./routes/botRoutes";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
 import signalRoutes from "./routes/signalRoutes";
 import brokerRoutes from "./routes/brokerRoutes";
+import packageRoutes from "./routes/packageRoutes"
+import botPackageRoutes from "./routes/botPackageRoutes"
 
 import { errorHandler } from "./middleware/errorHandler";
 import { verifySMTPConnection } from "./utils/emailUtils";
@@ -53,6 +55,8 @@ app.use("/api/bots", botRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/signals", signalRoutes);
 app.use("/api/brokers", brokerRoutes);
+app.use("/api/packages", packageRoutes);
+app.use("/api/botPackages", botPackageRoutes);
 
 // Health check endpoint
 app.get("/", (_req: Request, res: Response) => {

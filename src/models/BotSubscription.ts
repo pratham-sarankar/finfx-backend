@@ -6,6 +6,8 @@ import mongoose, { Document } from "mongoose";
 export interface IBotSubscription extends Document {
   userId: mongoose.Types.ObjectId;
   botId: mongoose.Types.ObjectId;
+  botPackageId:mongoose.Types.ObjectId;
+  lotSize: Number;
   status: "active" | "cancelled";
   subscribedAt: Date;
   cancelledAt?: Date;
@@ -27,6 +29,16 @@ const botSubscriptionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bot",
       required: true,
+    },
+    botPackageId:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"BotPackage",
+      required:true
+    },
+    lotSize:{
+      type:Number,
+      required:true,
+      min:[0.1,"lotSize must be at least 0.1"]
     },
     status: {
       type: String,

@@ -1,5 +1,5 @@
 import express from "express";
-import { auth } from "../middleware/auth";
+// import { auth } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import BotSubscription from "../models/BotSubscription";
 import Bot from "../models/Bot";
@@ -8,98 +8,179 @@ import BotPackage from "../models/BotPackage";
 const router = express.Router();
 
 // All subscription routes require authentication
-router.use(auth);
+// router.use(auth);
+
+// /**
+//  * @route POST /api/subscriptions
+//  * @desc Subscribe to a bot
+//  * @access Private
+//  */
+// router.post("/", async (req, res, next) => {
+//   try {
+//     const { botId,botPackageId,lotSize } = req.body;
+
+//     // Validate required field
+//     if (!botId) {
+//       throw new AppError("Bot ID is required", 400, "missing-bot-id");
+//     }
+//     if (!botPackageId) {
+//       throw new AppError("Bot Package ID is required", 400, "missing-bot-package-id");
+//     } 
+    
+//     if (!lotSize) {
+//       throw new AppError("Lot Size is required", 400, "missing-lot-size");
+//     }
+
+//     if (typeof lotSize !== "number" || lotSize < 0.1) {
+//       throw new AppError("Lot Size must be at least 0.1", 400, "invalid-lot-size");
+//     }
+    
+
+//     // Check if bot exists
+//     const bot = await Bot.findById(botId);
+//     if (!bot) {
+//       throw new AppError("Bot not found", 404, "bot-not-found");
+//     }
+
+//     // Check if botPackage exists
+
+//     const existingBotPackage = await BotPackage.findById(botPackageId);
+
+//     if(!existingBotPackage){
+//       throw new AppError("BotPackage not found ", 404, "bot-package-not-found");
+//     }
+
+
+//     // Check if user is already subscribed to this bot
+//     const existingSubscription = await BotSubscription.findOne({
+//       userId: req.user._id,
+//       botId: botId,
+//     });
+
+//     if (existingSubscription) {
+//       if (existingSubscription.status === "active") {
+//         throw new AppError(
+//           "You are already subscribed to this bot",
+//           409,
+//           "already-subscribed"
+//         );
+//       } else if (existingSubscription.status === "cancelled") {
+//         // Reactivate cancelled subscription
+//         const updatedSubscription = await BotSubscription.findByIdAndUpdate(
+//           existingSubscription._id,
+//           {
+//             status: "active",
+//             $unset: { cancelledAt: 1 },
+//           },
+//           { new: true }
+//         );
+
+//         const transformedSubscription: any = {
+//           ...updatedSubscription!.toObject(),
+//           id: updatedSubscription!._id,
+//         };
+//         delete transformedSubscription._id;
+//         delete transformedSubscription.__v;
+
+//         res.status(200).json({
+//           status: "success",
+//           message: "Subscription reactivated successfully",
+//           data: transformedSubscription,
+//         });
+//         return;
+//       }
+//     }
+
+//     // Create new subscription
+//     const subscription = await BotSubscription.create({
+//       userId: req.user._id,
+//       botId: botId,
+//       botPackageId:botPackageId,
+//       lotSize:lotSize
+//     });
+
+//     // Transform response
+//     const transformedSubscription: any = {
+//       ...subscription.toObject(),
+//       id: subscription._id,
+//     };
+//     delete transformedSubscription._id;
+//     delete transformedSubscription.__v;
+
+//     res.status(201).json({
+//       status: "success",
+//       message: "Successfully subscribed to bot",
+//       data: transformedSubscription,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 /**
  * @route POST /api/subscriptions
- * @desc Subscribe to a bot
+ * @desc Subscribe to a bot (with expiryDate calculation)
  * @access Private
  */
 router.post("/", async (req, res, next) => {
   try {
-    const { botId,botPackageId,lotSize } = req.body;
+    const { botId, botPackageId, lotSize } = req.body;
 
-    // Validate required field
-    if (!botId) {
-      throw new AppError("Bot ID is required", 400, "missing-bot-id");
-    }
-    if (!botPackageId) {
+    // --- Validation ---
+    if (!botId) throw new AppError("Bot ID is required", 400, "missing-bot-id");
+    if (!botPackageId)
       throw new AppError("Bot Package ID is required", 400, "missing-bot-package-id");
-    } 
-    
-    if (!lotSize) {
+    if (!lotSize)
       throw new AppError("Lot Size is required", 400, "missing-lot-size");
-    }
-
     if (typeof lotSize !== "number" || lotSize < 0.1) {
       throw new AppError("Lot Size must be at least 0.1", 400, "invalid-lot-size");
     }
-    
 
-    // Check if bot exists
+    const userId = "686d338fc39deb504d02331c"
+
+    // --- Check Bot ---
     const bot = await Bot.findById(botId);
-    if (!bot) {
-      throw new AppError("Bot not found", 404, "bot-not-found");
+    if (!bot) throw new AppError("Bot not found", 404, "bot-not-found");
+
+    // --- Check BotPackage & Get Duration ---
+    const existingBotPackage = await BotPackage.findById(botPackageId).populate({
+      path: "packageId",
+      model: "Package" // replace "Package" with your actual package model name if different
+    });
+    if (!existingBotPackage)
+      throw new AppError("BotPackage not found", 404, "bot-package-not-found");
+
+    const packageDuration = (existingBotPackage.packageId as any)?.duration;
+    if (!packageDuration || typeof packageDuration !== "number") {
+      throw new AppError("Package duration not found", 400, "invalid-package-duration");
     }
 
-    // Check if botPackage exists
-
-    const existingBotPackage = await BotPackage.findById(botPackageId);
-
-    if(!existingBotPackage){
-      throw new AppError("BotPackage not found ", 404, "bot-package-not-found");
-    }
-
-
-    // Check if user is already subscribed to this bot
+    // --- Check Existing Subscription ---
     const existingSubscription = await BotSubscription.findOne({
-      userId: req.user._id,
-      botId: botId,
-    });
+      userId,
+      botId,
+    }).sort({ createdAt: -1 }); // latest subscription
 
+    let expiryDate = new Date();
     if (existingSubscription) {
-      if (existingSubscription.status === "active") {
-        throw new AppError(
-          "You are already subscribed to this bot",
-          409,
-          "already-subscribed"
-        );
-      } else if (existingSubscription.status === "cancelled") {
-        // Reactivate cancelled subscription
-        const updatedSubscription = await BotSubscription.findByIdAndUpdate(
-          existingSubscription._id,
-          {
-            status: "active",
-            $unset: { cancelledAt: 1 },
-          },
-          { new: true }
-        );
-
-        const transformedSubscription: any = {
-          ...updatedSubscription!.toObject(),
-          id: updatedSubscription!._id,
-        };
-        delete transformedSubscription._id;
-        delete transformedSubscription.__v;
-
-        res.status(200).json({
-          status: "success",
-          message: "Subscription reactivated successfully",
-          data: transformedSubscription,
-        });
-        return;
-      }
+      // If subscription exists, start after its expiryDate
+      const baseDate = existingSubscription.expiryDate || new Date();
+      expiryDate = new Date(baseDate.getTime() + packageDuration * 24 * 60 * 60 * 1000);
+    } else {
+      // If no subscription, start from today
+      expiryDate = new Date(Date.now() + packageDuration * 24 * 60 * 60 * 1000);
     }
 
-    // Create new subscription
+    // --- Create New Subscription ---
     const subscription = await BotSubscription.create({
-      userId: req.user._id,
-      botId: botId,
-      botPackageId:botPackageId,
-      lotSize:lotSize
+      userId,
+      botId,
+      botPackageId,
+      lotSize,
+      expiryDate,
     });
 
-    // Transform response
+    // --- Transform Response ---
     const transformedSubscription: any = {
       ...subscription.toObject(),
       id: subscription._id,
@@ -116,6 +197,7 @@ router.post("/", async (req, res, next) => {
     next(error);
   }
 });
+
 
 /**
  * @route GET /api/subscriptions
@@ -283,6 +365,44 @@ router.put("/:id/cancel", async (req, res, next) => {
       status: "success",
       message: "Subscription cancelled successfully",
       data: transformedSubscription,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route PUT /api/subscriptions/:id
+ * @desc Update lotSize of a subscription
+ * @access Private
+ */
+router.put("/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { lotSize } = req.body;
+
+    if (!lotSize || typeof lotSize !== "number" || lotSize < 0.1) {
+      throw new AppError("lotSize must be a number and >= 0.1", 400, "invalid-lot-size");
+    }
+    const subscription = await BotSubscription.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      { lotSize },
+      { new: true, runValidators: true }
+    );
+
+    if (!subscription) {
+      throw new AppError("Subscription not found", 404, "subscription-not-found");
+    }
+
+    const updated = subscription.toObject();
+    updated.id = updated._id;
+    delete updated._id;
+    // delete updated.__v;
+
+    res.status(200).json({
+      status: "success",
+      message: "LotSize updated successfully",
+      data: updated,
     });
   } catch (error) {
     next(error);

@@ -13,6 +13,7 @@ export interface IBotSubscription extends Document {
   cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  expiryDate:Date;
 }
 
 /**
@@ -52,6 +53,7 @@ const botSubscriptionSchema = new mongoose.Schema(
     cancelledAt: {
       type: Date,
     },
+    expiryDate: { type: Date }
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields

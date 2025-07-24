@@ -13,7 +13,7 @@ const platformCredentialSchema = new mongoose.Schema(
       enum: ["MT4", "MT5", "TradingView", "Binance"], 
     },
     credentials: {
-      type: mongoose.Schema.Types.Mixed, // Dynamic key-value pairs
+      type: mongoose.Schema.Types.Mixed, 
       required: true,
     },
   },

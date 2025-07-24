@@ -1,11 +1,11 @@
 import  express  from "express";
-import { auth } from "../middleware/auth";
+// import { auth } from "../middleware/auth";
 import { createPlatformCredential, deletePlatformCredential,getPlatformCredentials, updatePlatformCredential } from "../controllers/platformCredentialsController";
 
 const router = express.Router()
 
 
-router.use(auth)
+// router.use(auth)
 
 
 router.post("/",createPlatformCredential);

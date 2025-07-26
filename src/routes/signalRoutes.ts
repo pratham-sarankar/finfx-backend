@@ -5,11 +5,164 @@ import Signal from "../models/Signal";
 import Bot from "../models/Bot";
 import BotSubscription from "../models/BotSubscription";
 import mongoose from "mongoose";
+import User from "../models/User";
 
 const router = express.Router();
 
 // All signal routes require authentication
 router.use(auth);
+
+// /**
+//  * @route POST /api/signals
+//  * @desc Create a new signal
+//  * @access Private
+//  */
+// router.post("/", async (req, res, next) => {
+//   try {
+//     const {
+//       userId,
+//       lotSize,
+//       stopLossPrice,
+//       targetPrice,
+//       botId,
+//       tradeId,
+//       direction,
+//       signalTime,
+//       entryTime,
+//       entryPrice,
+//       stoploss,
+//       target1r,
+//       target2r,
+//       exitTime,
+//       exitPrice,
+//       exitReason,
+//       profitLoss,
+//       profitLossR,
+//       trailCount,
+//     } = req.body;
+
+//     // Validate required fields - only entryTime, entryPrice, and direction are required
+//     if (!entryTime || !entryPrice || !direction) {
+//       throw new AppError(
+//         "Please provide entryTime, entryPrice, and direction",
+//         400,
+//         "missing-required-fields"
+//       );
+//     }
+
+//     // Validate direction
+//     if (!["LONG", "SHORT"].includes(direction)) {
+//       throw new AppError(
+//         "Direction must be either LONG or SHORT",
+//         400,
+//         "invalid-direction"
+//       );
+//     }
+//        // Check if User exists (if userId is provided)
+// if (!userId) {
+//   throw new AppError("userId is required", 400, "user-id-required");
+// }
+
+// const user = await User.findById(userId);
+// if (!user) {
+//   throw new AppError("User not found", 404, "user-not-found");
+// }
+
+// if(!lotSize){
+//   throw new AppError("lotSize not found", 404, "lot-size-not-found");
+
+// }
+
+// if (typeof lotSize !== "number") {
+//   throw new AppError("lotSize must be a number", 400, "lot-size-invalid-type");
+// }
+
+// if (lotSize < 0.1) {
+//   throw new AppError("lotSize must be at least 0.1", 400, "lot-size-too-small");
+// }
+
+
+//     // Check if bot exists (if botId is provided)
+//     if (botId) {
+//       const bot = await Bot.findById(botId);
+//       if (!bot) {
+//         throw new AppError("Bot not found", 404, "bot-not-found");
+//       }
+//     }
+
+//     // Auto-generate tradeId if not provided
+//     let finalTradeId = tradeId;
+//     if (!finalTradeId) {
+//       finalTradeId = `TRADE_${Date.now()}_${Math.random()
+//         .toString(36)
+//         .substr(2, 9)}`;
+//     }
+
+//     // Check if signal with same tradeId already exists for this bot (if botId is provided)
+//     if (botId && finalTradeId) {
+//       const existingSignal = await Signal.findOne({
+//         botId,
+//         tradeId: finalTradeId,
+//       });
+//       if (existingSignal) {
+//         throw new AppError(
+//           "Signal with this trade ID already exists for this bot",
+//           409,
+//           "duplicate-trade-id"
+//         );
+//       }
+//     }
+
+//     // Prepare signal data with defaults for optional fields
+//     const signalData: any = {
+//       direction,
+//       entryTime: new Date(entryTime),
+//       entryPrice,
+//     };
+
+//     // Add optional fields if provided
+//     if (botId) signalData.botId = botId;
+//     if (finalTradeId) signalData.tradeId = finalTradeId;
+//     if (signalTime) signalData.signalTime = new Date(signalTime);
+//     if (stoploss !== undefined) signalData.stoploss = stoploss;
+//     if (target1r !== undefined) signalData.target1r = target1r;
+//     if (target2r !== undefined) signalData.target2r = target2r;
+//     if (exitTime) signalData.exitTime = new Date(exitTime);
+//     if (exitPrice !== undefined) signalData.exitPrice = exitPrice;
+//     if (exitReason !== undefined) signalData.exitReason = exitReason;
+//     if (profitLoss !== undefined) signalData.profitLoss = profitLoss;
+//     if (profitLossR !== undefined) signalData.profitLossR = profitLossR;
+//     if (trailCount !== undefined) signalData.trailCount = trailCount;
+
+//     // Create new signal
+//     const signal = await Signal.create(signalData);
+
+//     // Transform response
+//     const transformedSignal: any = {
+//       ...signal.toObject(),
+//       id: signal._id,
+//     };
+//     delete transformedSignal._id;
+//     delete transformedSignal.__v;
+
+//     // Transform botId to bot format
+//     if (transformedSignal.botId) {
+//       transformedSignal.bot = {
+//         id: transformedSignal.botId._id,
+//         name: transformedSignal.botId.name,
+//       };
+//       delete transformedSignal.botId;
+//     }
+
+//     res.status(201).json({
+//       status: "success",
+//       message: "Signal created successfully",
+//       data: transformedSignal,
+//     });
+//   } catch (error) {
+//     return next(error);
+//   }
+// });
 
 /**
  * @route POST /api/signals
@@ -19,6 +172,10 @@ router.use(auth);
 router.post("/", async (req, res, next) => {
   try {
     const {
+      userId,
+      lotSize,
+      stopLossPrice,
+      targetPrice,
       botId,
       tradeId,
       direction,
@@ -54,6 +211,28 @@ router.post("/", async (req, res, next) => {
       );
     }
 
+    // -------- NEW FIELD VALIDATION --------
+    // Check if User exists (userId required)
+    if (!userId) {
+      throw new AppError("userId is required", 400, "user-id-required");
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError("User not found", 404, "user-not-found");
+    }
+
+    // Validate lotSize
+    if (lotSize === undefined || lotSize === null) {
+      throw new AppError("lotSize is required", 400, "lot-size-required");
+    }
+    if (typeof lotSize !== "number") {
+      throw new AppError("lotSize must be a number", 400, "lot-size-invalid-type");
+    }
+    if (lotSize < 0.1) {
+      throw new AppError("lotSize must be at least 0.1", 400, "lot-size-too-small");
+    }
+    // ---------------------------------------
+
     // Check if bot exists (if botId is provided)
     if (botId) {
       const bot = await Bot.findById(botId);
@@ -87,6 +266,8 @@ router.post("/", async (req, res, next) => {
 
     // Prepare signal data with defaults for optional fields
     const signalData: any = {
+      userId,
+      lotSize,
       direction,
       entryTime: new Date(entryTime),
       entryPrice,
@@ -96,6 +277,8 @@ router.post("/", async (req, res, next) => {
     if (botId) signalData.botId = botId;
     if (finalTradeId) signalData.tradeId = finalTradeId;
     if (signalTime) signalData.signalTime = new Date(signalTime);
+    if (stopLossPrice !== undefined) signalData.stopLossPrice = stopLossPrice;
+    if (targetPrice !== undefined) signalData.targetPrice = targetPrice;
     if (stoploss !== undefined) signalData.stoploss = stoploss;
     if (target1r !== undefined) signalData.target1r = target1r;
     if (target2r !== undefined) signalData.target2r = target2r;
@@ -135,6 +318,7 @@ router.post("/", async (req, res, next) => {
     return next(error);
   }
 });
+
 
 /**
  * @route POST /api/signals/bulk

@@ -150,17 +150,25 @@ export const createSignalsInBulk = async (req: Request, res: Response, next: Nex
 
 
 export const getSignalById = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+    try {
     const { id } = req.params;
-    const signal = await Signal.findById(id).populate("botId", "name").select("-__v");
+
+    const signal = await Signal.findById(id)
+      .populate("botId", "name")
+      .select("-__v");
 
     if (!signal) {
       throw new AppError("Signal not found", 404, "signal-not-found");
     }
 
-    const transformedSignal: any = { ...signal.toObject(), id: signal._id };
+    // Transform response
+    const transformedSignal: any = {
+      ...signal.toObject(),
+      id: signal._id,
+    };
     delete transformedSignal._id;
 
+    // Transform botId to bot format
     if (transformedSignal.botId) {
       transformedSignal.bot = {
         id: transformedSignal.botId._id,
@@ -169,9 +177,12 @@ export const getSignalById = async (req: Request, res: Response, next: NextFunct
       delete transformedSignal.botId;
     }
 
-    res.status(200).json({ status: "success", data: transformedSignal });
-  } catch (err) {
-    next(err);
+    res.status(200).json({
+      status: "success",
+      data: transformedSignal,
+    });
+  } catch (error) {
+    return next(error);
   }
 };
 

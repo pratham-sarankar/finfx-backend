@@ -19,6 +19,7 @@ export interface ISignal extends Document {
   profitLoss?: number;
   profitLossR?: number;
   trailCount?: number;
+  pairName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -90,6 +91,12 @@ const signalSchema = new mongoose.Schema(
       min: [0, "Trail count cannot be negative"],
       default: 0,
     },
+    pairName: {
+      type: String,
+      required: true,
+      minlength: [3, "Pair Name must be at least 3 characters long."],
+      maxlength: [50, "Pair Name must be less than or equal to 50 characters."]
+}
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields

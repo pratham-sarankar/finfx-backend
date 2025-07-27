@@ -34,6 +34,7 @@ router.post("/", async (req, res, next) => {
       profitLoss,
       profitLossR,
       trailCount,
+      pairName
     } = req.body;
 
     // Validate required fields - only entryTime, entryPrice, and direction are required
@@ -42,6 +43,14 @@ router.post("/", async (req, res, next) => {
         "Please provide entryTime, entryPrice, and direction",
         400,
         "missing-required-fields"
+      );
+    }
+
+    if(!pairName){
+      throw new AppError(
+        "Please provide Pair Name",
+        400,
+        "missing-pair-name"
       );
     }
 
@@ -86,11 +95,13 @@ router.post("/", async (req, res, next) => {
     }
 
     // Prepare signal data with defaults for optional fields
-    const signalData: any = {
-      direction,
-      entryTime: new Date(entryTime),
-      entryPrice,
-    };
+const signalData: any = {
+  direction,
+  entryTime: new Date(entryTime),
+  entryPrice,
+  pairName, // 
+};
+
 
     // Add optional fields if provided
     if (botId) signalData.botId = botId;
@@ -164,6 +175,7 @@ router.post("/bulk", async (req, res, next) => {
     const signalsData = signals.map((signal) => ({
       botId,
       tradeId: signal.tradeId,
+      pairName: signal.pairName,
       direction: signal.direction,
       signalTime: new Date(signal.signalTime),
       entryTime: new Date(signal.entryTime),
@@ -178,6 +190,13 @@ router.post("/bulk", async (req, res, next) => {
       profitLossR: signal.profitLossR,
       trailCount: signal.trailCount,
     }));
+
+    for (const signal of signals) {
+  if (!signal.pairName) {
+    throw new AppError("Each signal must include pairName", 400, "missing-pair-name");
+  }
+}
+
 
     // Create signals in bulk
     const createdSignals = await Signal.insertMany(signalsData);
@@ -897,6 +916,7 @@ router.put("/:id", async (req, res, next) => {
       profitLoss,
       profitLossR,
       trailCount,
+      pairName, // ✅ added
     } = req.body;
 
     // Check if signal exists
@@ -911,6 +931,15 @@ router.put("/:id", async (req, res, next) => {
         "Direction must be either LONG or SHORT",
         400,
         "invalid-direction"
+      );
+    }
+
+    // Validate pairName length if provided
+    if (pairName && (pairName.length < 3 || pairName.length > 50)) {
+      throw new AppError(
+        "Pair name must be between 3 and 50 characters",
+        400,
+        "invalid-pair-name"
       );
     }
 
@@ -929,6 +958,7 @@ router.put("/:id", async (req, res, next) => {
     if (profitLoss !== undefined) updateData.profitLoss = profitLoss;
     if (profitLossR !== undefined) updateData.profitLossR = profitLossR;
     if (trailCount !== undefined) updateData.trailCount = trailCount;
+    if (pairName) updateData.pairName = pairName; // ✅ added
 
     // Update signal
     const signal = await Signal.findByIdAndUpdate(

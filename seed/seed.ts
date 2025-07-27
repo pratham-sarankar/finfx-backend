@@ -136,6 +136,7 @@ async function seed() {
           botId: bot._id,
           tradeId: uniqueTradeId,
           direction: signal.direction,
+          pairName: signal.pairName, 
           signalTime: new Date(signal.signalTime),
           entryTime: new Date(signal.entryTime),
           entryPrice: signal.entryPrice,

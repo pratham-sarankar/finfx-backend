@@ -4,25 +4,30 @@ const platformCredentialSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", 
+      ref: "User",
       required: true,
     },
     platformName: {
       type: String,
       required: true,
-      enum: ["MT4", "MT5", "TradingView", "Binance"], 
+      enum: ["MT4", "MT5", "TradingView", "Binance"],
     },
     credentials: {
-      type: mongoose.Schema.Types.Mixed, 
+      type: mongoose.Schema.Types.Mixed,
       required: true,
     },
   },
   { timestamps: true }
 );
 
+platformCredentialSchema.index(
+  { userId: 1, platformName: 1 },
+  { unique: true }
+);
 
-platformCredentialSchema.index({ userId: 1, platformName: 1 }, { unique: true });
-
-const PlatformCredential = mongoose.model("PlatformCredential", platformCredentialSchema);
+const PlatformCredential = mongoose.model(
+  "PlatformCredential",
+  platformCredentialSchema
+);
 
 export default PlatformCredential;

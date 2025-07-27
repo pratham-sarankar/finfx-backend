@@ -17,6 +17,7 @@ import brokerRoutes from "./routes/brokerRoutes";
 import packageRoutes from "./routes/packageRoutes"
 import botPackageRoutes from "./routes/botPackageRoutes"
 import userRoutes from "./routes/userRoutes"
+import platformCredential from "./routes/platformCredentials";
 import { errorHandler } from "./middleware/errorHandler";
 import { verifySMTPConnection } from "./utils/emailUtils";
 import { getResetPasswordPage } from "./controllers/authController";
@@ -58,6 +59,7 @@ app.use("/api/brokers", brokerRoutes);
 app.use("/api/packages", packageRoutes);
 app.use("/api/botPackages", botPackageRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/platformCredentials", platformCredential);
 
 // Health check endpoint
 app.get("/", (_req: Request, res: Response) => {

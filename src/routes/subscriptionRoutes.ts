@@ -10,6 +10,9 @@ const router = express.Router();
 // All subscription routes require authentication
 router.use(auth);
 
+
+
+
 /**
  * @route POST /api/subscriptions
  * @desc Subscribe to a bot

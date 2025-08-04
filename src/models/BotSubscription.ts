@@ -46,7 +46,7 @@ const botSubscriptionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "cancelled"],
+      enum: ["active", "pause", "expired"],
       default: "active",
     },
     subscribedAt: {

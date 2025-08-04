@@ -89,62 +89,62 @@ router.get("/:id", async (req, res, next) => {
 });
 
 /**
- * @route PUT /api/subscriptions/:id/cancel
- * @desc Cancel a subscription
+ * @route PUT /api/subscriptions/:id
+ * @desc Update a subscription (status, lotSize, etc.)
  * @access Private
  */
-router.put("/:id/cancel", async (req, res, next) => {
-  try {
-    const { id } = req.params;
+router.put(
+  "/:id",
+  body("status")
+    .optional()
+    .isIn(["active", "pause", "expired"])
+    .withMessage("Status must be one of 'active', 'pause', or 'expired'"),
+  body("lotSize")
+    .optional()
+    .isFloat({ min: 0.01 })
+    .withMessage("Lot Size must be a number >= 0.01"),
+  validate,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { status, lotSize } = req.body;
 
-    const subscription = await BotSubscription.findOne({
-      _id: id,
-      userId: req.user._id,
-    });
+      const subscription = await BotSubscription.findOne({
+        _id: id,
+        userId: req.user._id,
+      });
 
-    if (!subscription) {
-      throw new AppError(
-        "Subscription not found",
-        404,
-        "subscription-not-found"
+      if (!subscription) {
+        throw new AppError("Subscription not found", 404, "not-found");
+      }
+
+  
+      const updateFields: any = {};
+      if (status) updateFields.status = status;
+      if (lotSize) updateFields.lotSize = lotSize;
+
+      const updatedSubscription = await BotSubscription.findByIdAndUpdate(
+        id,
+        updateFields,
+        { new: true }
       );
+
+      const transformed = {
+        ...updatedSubscription!.toObject(),
+        id: updatedSubscription!._id,
+      };
+      delete transformed._id;
+      res.status(200).json({
+        status: "success",
+        message: "Subscription updated successfully",
+        data: transformed,
+      });
+    } catch (err) {
+      next(err);
     }
-
-    if (subscription.status === "cancelled") {
-      throw new AppError(
-        "Subscription is already cancelled",
-        400,
-        "already-cancelled"
-      );
-    }
-
-    // Cancel subscription
-    const updatedSubscription = await BotSubscription.findByIdAndUpdate(
-      id,
-      {
-        status: "cancelled",
-        cancelledAt: new Date(),
-      },
-      { new: true }
-    );
-
-    // Transform response
-    const transformedSubscription: any = {
-      ...updatedSubscription!.toObject(),
-      id: updatedSubscription!._id,
-    };
-    delete transformedSubscription._id;
-    delete transformedSubscription.__v;
-
-    res.status(200).json({
-      status: "success",
-      message: "Subscription cancelled successfully",
-      data: transformedSubscription,
-    });
-  } catch (error) {
-    next(error);
   }
-});
+);
+
 
 /**
  * @route GET /api/subscriptions/check/:botId

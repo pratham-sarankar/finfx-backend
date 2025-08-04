@@ -119,8 +119,6 @@ async function seed() {
     // 4. Seed signals
 const signalsPath = path.join(__dirname, "data", "signals.json");
 const signalsData = JSON.parse(fs.readFileSync(signalsPath, "utf8"));
-const userId = new mongoose.Types.ObjectId("686d338fc39deb504d02331c");
-
 console.log(`Loading ${signalsData.length} signals from signals.json`);
 
 for (const bot of seededBots) {

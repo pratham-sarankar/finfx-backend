@@ -54,6 +54,13 @@ const botSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
+    versionKey: false,
+    toJSON: {
+      transform(_doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+      },
+    },
   }
 );
 

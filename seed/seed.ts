@@ -116,21 +116,18 @@ async function seed() {
       }
     }
 
-    // 4. Seed signals for all bots
-    const signalsPath = path.join(__dirname, "data", "signals.json");
-    const signalsData = JSON.parse(fs.readFileSync(signalsPath, "utf8"));
+    // 4. Seed signals
+const signalsPath = path.join(__dirname, "data", "signals.json");
+const signalsData = JSON.parse(fs.readFileSync(signalsPath, "utf8"));
+const userId = new mongoose.Types.ObjectId("686d338fc39deb504d02331c");
 
-    console.log(`Loading ${signalsData.length} signals from signals.json`);
+console.log(`Loading ${signalsData.length} signals from signals.json`);
 
-    for (const bot of seededBots) {
-      console.log(`Seeding signals for bot: ${bot.name} (${bot._id})`);
+for (const bot of seededBots) {
+  console.log(`Seeding signals for bot: ${bot.name} (${bot._id})`);
 
-      for (const signal of signalsData) {
-        // Create unique tradeId for each bot by appending bot name
-        const uniqueTradeId = `${signal.tradeId}_${bot.name.replace(
-          /[^a-zA-Z0-9]/g,
-          ""
-        )}`;
+  for (const signal of signalsData) {
+    const uniqueTradeId = `${signal.tradeId}_${bot.name.replace(/[^a-zA-Z0-9]/g, "")}`;
 
         const signalData = {
           botId: bot._id,
@@ -153,24 +150,22 @@ async function seed() {
           updatedAt: new Date(signal.updatedAt),
         };
 
-        try {
-          await Signal.findOneAndUpdate(
-            { botId: bot._id, tradeId: uniqueTradeId },
-            signalData,
-            { upsert: true, setDefaultsOnInsert: true }
-          );
-        } catch (error) {
-          console.warn(
-            `Failed to seed signal ${uniqueTradeId} for bot ${bot.name}:`,
-            error
-          );
-        }
-      }
-
-      console.log(`Completed seeding signals for bot: ${bot.name}`);
+    try {
+      await Signal.findOneAndUpdate(
+        { botId: bot._id, tradeId: uniqueTradeId },
+        signalData,
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    } catch (error) {
+      console.warn(`Failed to seed signal ${uniqueTradeId} for bot ${bot.name}:`, error);
     }
+  }
 
-    console.log("Seeded signals for all bots");
+  console.log(`Completed seeding signals for bot: ${bot.name}`);
+}
+
+console.log("Seeded signals for all bots");
+
 
     // 5. Seed packages from packages.json instead of hardcoded array
     const packagesPath = path.join(__dirname, "data", "packages.json");

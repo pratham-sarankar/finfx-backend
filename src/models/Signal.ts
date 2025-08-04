@@ -4,6 +4,10 @@ import mongoose, { Document } from "mongoose";
  * Interface for Signal document
  */
 export interface ISignal extends Document {
+  userId?:mongoose.Types.ObjectId;
+  lotSize?:number;
+  stopLossPrice?:number;
+  targetPrice?:number;
   botId?: mongoose.Types.ObjectId;
   tradeId?: string;
   direction: "LONG" | "SHORT";
@@ -29,6 +33,21 @@ export interface ISignal extends Document {
  */
 const signalSchema = new mongoose.Schema(
   {
+    userId:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"User",
+      required:true
+    },
+    lotSize:{
+      type:Number,
+      required:true
+    },
+    stopLossPrice:{
+      type:Number,
+    },
+    targetPrice:{
+      type:Number
+    },
     botId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bot",

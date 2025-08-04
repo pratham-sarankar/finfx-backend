@@ -4,7 +4,7 @@ import { AppError } from "../middleware/errorHandler";
 import BotSubscription from "../models/BotSubscription";
 import Bot from "../models/Bot";
 import validate from "../middleware/validate";
-import { body } from "express-validator";
+import { body, query } from "express-validator";
 import * as SubscriptionController from "../controllers/subscriptionController";
 
 const router = express.Router();
@@ -42,56 +42,15 @@ router.post(
  * @desc Get user's subscriptions
  * @access Private
  */
-router.get("/", async (req, res, next) => {
-  try {
-    const { status } = req.query;
-
-    // Build query
-    const query: any = { userId: req.user._id };
-    if (status && ["active", "cancelled"].includes(status as string)) {
-      query.status = status;
-    }
-
-    const subscriptions = await BotSubscription.find(query)
-      .populate(
-        "botId",
-        "name description recommendedCapital performanceDuration script"
-      )
-      .select("-__v")
-      .sort({ subscribedAt: -1 });
-
-    // Transform response
-    const transformedSubscriptions = subscriptions.map((subscription) => {
-      const subscriptionObj = subscription.toObject();
-      const transformedSubscription: any = {
-        ...subscriptionObj,
-        id: subscriptionObj._id,
-        bot: (subscriptionObj.botId as any)?._id
-          ? {
-              id: (subscriptionObj.botId as any)._id,
-              name: (subscriptionObj.botId as any).name,
-              description: (subscriptionObj.botId as any).description,
-              recommendedCapital: (subscriptionObj.botId as any)
-                .recommendedCapital,
-              performanceDuration: (subscriptionObj.botId as any)
-                .performanceDuration,
-              script: (subscriptionObj.botId as any).script,
-            }
-          : null,
-      };
-      delete transformedSubscription._id;
-      delete transformedSubscription.botId;
-      return transformedSubscription;
-    });
-
-    res.status(200).json({
-      status: "success",
-      data: transformedSubscriptions,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get(
+  "/",
+  query("status")
+    .optional()
+    .isIn(["active", "cancelled", "pending"])
+    .withMessage("Status must be one of 'active', 'cancelled', or 'pending'"),
+  validate,
+  SubscriptionController.getUserSubscriptions
+);
 
 /**
  * @route GET /api/subscriptions/:id
@@ -107,7 +66,7 @@ router.get("/:id", async (req, res, next) => {
       userId: req.user._id,
     })
       .populate(
-        "botId",
+        "bot",
         "name description recommendedCapital performanceDuration script"
       )
       .select("-__v");
@@ -120,30 +79,9 @@ router.get("/:id", async (req, res, next) => {
       );
     }
 
-    // Transform response
-    const subscriptionObj = subscription.toObject();
-    const transformedSubscription: any = {
-      ...subscriptionObj,
-      id: subscriptionObj._id,
-      bot: (subscriptionObj.botId as any)?._id
-        ? {
-            id: (subscriptionObj.botId as any)._id,
-            name: (subscriptionObj.botId as any).name,
-            description: (subscriptionObj.botId as any).description,
-            recommendedCapital: (subscriptionObj.botId as any)
-              .recommendedCapital,
-            performanceDuration: (subscriptionObj.botId as any)
-              .performanceDuration,
-            script: (subscriptionObj.botId as any).script,
-          }
-        : null,
-    };
-    delete transformedSubscription._id;
-    delete transformedSubscription.botId;
-
     res.status(200).json({
       status: "success",
-      data: transformedSubscription,
+      data: subscription,
     });
   } catch (error) {
     next(error);

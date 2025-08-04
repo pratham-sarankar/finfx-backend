@@ -58,7 +58,7 @@ const botSchema = new mongoose.Schema(
     toJSON: {
       transform(_doc, ret) {
         ret.id = ret._id;
-        delete ret._id;
+        delete (ret as any)._id;
       },
     },
   }

@@ -115,10 +115,17 @@ const signalSchema = new mongoose.Schema(
       required: true,
       minlength: [3, "Pair Name must be at least 3 characters long."],
       maxlength: [50, "Pair Name must be less than or equal to 50 characters."]
-}
+    }
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
+    versionKey: false,
+    toJSON: {
+      transform(_doc, ret: any) {
+        ret.id = ret._id;
+        delete ret._id;
+      },
+    },
   }
 );
 

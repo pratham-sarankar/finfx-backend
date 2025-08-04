@@ -10,21 +10,20 @@ export async function createSubscription(
   try {
     const { botId, botPackageId, lotSize } = req.body;
 
-    // If a active subscription exists with the given botId & botPackageId
-    const botSubscriptionExists = await BotSubscription.findOne({
+    const existingSubscription = await BotSubscription.findOne({
+      userId: req.user._id,
       botId,
-      botPackageId,
-      status: "active",
+      status: { $in: ["active", "paused"] }, 
     });
-    if (botSubscriptionExists) {
+
+    if (existingSubscription) {
       throw new AppError(
-        "You are already subscribed to this bot.",
+        "You already have an active or paused subscription for this bot.",
         409,
         "already-subscribed"
       );
     }
 
-    // Create new subscription
     const subscription = await BotSubscription.create({
       userId: req.user._id,
       botId,

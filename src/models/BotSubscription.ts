@@ -12,7 +12,7 @@ export interface IBotSubscription extends Document {
   botId: mongoose.Types.ObjectId;
   botPackageId: mongoose.Types.ObjectId;
   lotSize: Number;
-  status: "active" | "cancelled";
+  status: "active"| "pause"| "expired";
   subscribedAt: Date;
   cancelledAt?: Date;
   createdAt: Date;
@@ -78,9 +78,6 @@ botSubscriptionSchema.virtual("bot", {
   foreignField: "_id",
   justOne: true,
 });
-
-// Compound index to ensure one subscription per user per bot
-botSubscriptionSchema.index({ userId: 1, botId: 1 }, { unique: true });
 
 // Indexes for faster queries
 botSubscriptionSchema.index({ userId: 1, status: 1 });

@@ -63,9 +63,9 @@ const botSubscriptionSchema = new mongoose.Schema(
     id: true,
     toJSON: {
       virtuals: true,
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id;
-        delete (ret as any)._id;
+        delete ret._id;
       },
     },
     toObject: { virtuals: true },

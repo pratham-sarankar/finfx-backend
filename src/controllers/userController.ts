@@ -11,15 +11,15 @@ export const createUser = async (
   next: NextFunction
 ) => {
   try {
-    const { fullName, email, phoneNumber, password } = req.body;
-    if (!fullName || !email || !phoneNumber || !password) {
+    const { fullName, email, phoneNumber, password, role } = req.body;
+    if (!fullName || !email || !phoneNumber || !password || !role) {
       throw new AppError("All fields are required", 400, "missing-fields");
     }
     const existing = await User.findOne({ email });
     if (existing) {
       throw new AppError("Email already in use", 409, "email-exists");
     }
-    const user = await User.create({ fullName, email, phoneNumber, password });
+    const user = await User.create({ fullName, email, phoneNumber, password,role });
     const userObj = user.toObject();
     const { _id, __v, password: pwd, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
@@ -85,33 +85,73 @@ export const updateUser = async (
 ) => {
   try {
     const { id } = req.params;
+
+    //  Validate ID
     if (!id) {
       throw new AppError("Id not found", 404, "id-not-found");
     }
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new AppError("Invalid user id ", 400, "invalid-id");
+      throw new AppError("Invalid user id", 400, "invalid-id");
     }
-    const { fullName, email, phoneNumber, password } = req.body;
-    if (!fullName || !email || !phoneNumber) {
-      throw new AppError(
-        "All fields except password are required",
-        400,
-        "missing-fields"
-      );
+
+    //  Destructure request body
+    const { fullName, email, phoneNumber, password, role } = req.body;
+
+    //  Validate required fields
+    if (!fullName || !email || !phoneNumber || !role) {
+      throw new AppError("All fields are required", 400, "missing-fields");
     }
-    const updateData: any = { fullName, email, phoneNumber };
+
+    // Step 4: Role update restrictions
+    const isRoleBeingChanged = role && role !== req.user.role;
+
+    if (isRoleBeingChanged) {
+      if (req.user.role !== "admin") {
+        throw new AppError(
+          "You are not allowed to change user roles",
+          403,
+          "role-change-not-allowed"
+        );
+      }
+
+      if (req.user.id === id) {
+        throw new AppError(
+          "You cannot change your own role",
+          403,
+          "self-role-change-denied"
+        );
+      }
+    }
+
+    //  Prepare update data
+    const updateData: any = {
+      fullName,
+      email,
+      phoneNumber,
+      role,
+    };
+
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
+
+    //  Update user
     const user = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
       context: "query",
     }).select("-__v -password");
-    if (!user) throw new AppError("User not found", 404, "user-not-found");
+
+    if (!user) {
+      throw new AppError("User not found", 404, "user-not-found");
+    }
+
+    //  Format response
     const userObj = user.toObject();
-    const { _id, __v, password: pwd, ...rest } = userObj;
+    const { _id, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
+
     res.status(200).json({
       success: true,
       message: "User updated successfully",

@@ -14,6 +14,7 @@ export interface IUser extends Document {
   phoneNumber?: string; // Optional phone number
   password?: string;
   googleId?: string;
+  role?: "admin"|"manager"|"user";
   profilePicture?: string;
   hashedPin?: string;
   resetPasswordToken?: string;
@@ -58,6 +59,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       minlength: [8, "Password must be at least 8 characters long"],
       select: false, // Don't include password in query results by default
+    },
+      role: {
+      type: String,
+      enum: ["admin","user"],
+      default: "user",
     },
     googleId: {
       type: String,

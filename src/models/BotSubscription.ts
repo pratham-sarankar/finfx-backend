@@ -14,9 +14,11 @@ export interface IBotSubscription extends Document {
   lotSize: number;
   status: "active" | "paused" | "expired";
   subscribedAt: Date;
+  expiresAt: Date;
   cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  isExpired: boolean; // Virtual field
 }
 
 /**
@@ -53,6 +55,10 @@ const botSubscriptionSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    expiresAt: {
+      type: Date,
+      required: true,
+    },
     cancelledAt: {
       type: Date,
     },
@@ -79,14 +85,25 @@ botSubscriptionSchema.virtual("bot", {
   justOne: true,
 });
 
+// Virtual to check if subscription is expired
+botSubscriptionSchema.virtual("isExpired").get(function() {
+  return this.expiresAt < new Date();
+});
+
 // Compound index to ensure one subscription per user per bot
 botSubscriptionSchema.index({ userId: 1, botId: 1 }, { unique: true });
 
 // Indexes for faster queries
 botSubscriptionSchema.index({ userId: 1, status: 1 });
 botSubscriptionSchema.index({ botId: 1, status: 1 });
+botSubscriptionSchema.index({ expiresAt: 1 }); // Index for expiration date queries
 
 botSubscriptionSchema.pre<IBotSubscription>("save", async function (next) {
+  // Check if subscription has expired and update status
+  if (this.expiresAt && this.expiresAt < new Date() && this.status !== "expired") {
+    this.status = "expired";
+  }
+
   // Only run this validation for new documents or if the foreign key fields are modified
   if (
     this.isNew ||
@@ -111,6 +128,8 @@ botSubscriptionSchema.pre<IBotSubscription>("save", async function (next) {
     if (!botPackageExists) {
       throw new AppError("Bot package not found", 404, "bot-package-not-found");
     }
+    next();
+  } else {
     next();
   }
 });

@@ -181,6 +181,7 @@ router.get("/check/:botId", async (req, res, next) => {
               id: subscription._id,
               status: subscription.status,
               subscribedAt: subscription.subscribedAt,
+              expiresAt: subscription.expiresAt,
               cancelledAt: subscription.cancelledAt,
               botPackageId: subscription.botPackageId,
               lotSize: subscription.lotSize,

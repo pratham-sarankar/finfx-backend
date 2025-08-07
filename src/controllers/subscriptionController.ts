@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import BotSubscription from "../models/BotSubscription";
+import BotPackage from "../models/BotPackage";
+import Package from "../models/Package";
 import { AppError } from "../middleware/errorHandler";
 
 export async function createSubscription(
@@ -24,12 +26,37 @@ export async function createSubscription(
       );
     }
 
+    // Fetch the bot package to get the package ID
+    const botPackage = await BotPackage.findById(botPackageId);
+    if (!botPackage) {
+      throw new AppError(
+        "Bot package not found",
+        404,
+        "bot-package-not-found"
+      );
+    }
+
+    // Fetch the package to get the duration
+    const packageDetails = await Package.findById(botPackage.packageId);
+    if (!packageDetails) {
+      throw new AppError(
+        "Package not found",
+        404,
+        "package-not-found"
+      );
+    }
+
+    // Calculate expiresAt date by adding duration days to current date
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + packageDetails.duration);
+
     // Create new subscription
     const subscription = await BotSubscription.create({
       userId: req.user._id,
       botId,
       botPackageId,
       lotSize,
+      expiresAt,
     });
 
     res.status(201).json({

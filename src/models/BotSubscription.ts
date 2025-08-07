@@ -11,8 +11,8 @@ export interface IBotSubscription extends Document {
   userId: mongoose.Types.ObjectId;
   botId: mongoose.Types.ObjectId;
   botPackageId: mongoose.Types.ObjectId;
-  lotSize: Number;
-  status: "active" | "cancelled";
+  lotSize: number;
+  status: "active" | "paused" | "expired";
   subscribedAt: Date;
   cancelledAt?: Date;
   createdAt: Date;
@@ -46,7 +46,7 @@ const botSubscriptionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "pause", "expired"],
+      enum: ["active", "paused", "expired"],
       default: "active",
     },
     subscribedAt: {

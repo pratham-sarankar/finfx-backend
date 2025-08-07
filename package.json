@@ -1,6 +1,6 @@
 {
   "name": "zyrotech_backend",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "Backend API for Zyrotech",
   "main": "dist/app.js",
   "scripts": {

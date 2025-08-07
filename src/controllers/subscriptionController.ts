@@ -14,6 +14,7 @@ export async function createSubscription(
 
     // If a active subscription exists with the given botId & botPackageId
     const botSubscriptionExists = await BotSubscription.findOne({
+      userId: req.user._id,
       botId,
       botPackageId,
       status: "active",

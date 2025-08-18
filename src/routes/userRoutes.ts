@@ -2,20 +2,20 @@ import express from "express";
 // import { auth } from "../middleware/auth";
 import {
   createUser,
-  getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
+  getUsers,
 } from "../controllers/userController";
 
 const router = express.Router();
 
 // router.use(auth);
 
-// Create user 
+// Create user
 router.post("/", createUser);
 // Get all users
-router.get("/", getAllUsers);
+router.get("/", getUsers);
 // Get single user by ID
 router.get("/:id", getUserById);
 // Update user by ID

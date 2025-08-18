@@ -34,19 +34,54 @@ export const createUser = async (
 };
 
 // Get all users
-export const getAllUsers = async (
-  _: Request,
+export const getUsers = async (
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const users = await User.find().select("-__v -password");
+    // Parse pagination params
+    let n = parseInt(req.query.n as string, 10);
+    let p = parseInt(req.query.p as string, 10);
+
+    // Set defaults if not provided or invalid
+    n = isNaN(n) || n <= 0 ? 10 : n;
+    p = isNaN(p) || p <= 0 ? 1 : p;
+
+    const totalUsers = await User.countDocuments();
+    const totalPages = Math.ceil(totalUsers / n);
+
+    // If requested page is out of range, return empty array
+    if (p > totalPages && totalPages !== 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        page: p,
+        perPage: n,
+        totalPages,
+        totalUsers,
+      });
+    }
+
+    const users = await User.find()
+      .select("-__v -password")
+      .skip((p - 1) * n)
+      .limit(n);
+
     const transformedUsers = users.map((user) => {
       const userObj = user.toObject();
       const { _id, __v, password: pwd, ...rest } = userObj;
       return { ...rest, id: _id };
     });
-    return res.status(200).json({ success: true, data: transformedUsers });
+
+    return res.status(200).json({
+      success: true,
+      data: transformedUsers,
+      page: p,
+      perPage: n,
+      totalPages,
+      totalUsers,
+    });
   } catch (error) {
     return next(error);
   }

@@ -12,7 +12,7 @@ export interface IBotSubscription extends Document {
   botId: mongoose.Types.ObjectId;
   botPackageId: mongoose.Types.ObjectId;
   lotSize: Number;
-  status: "active"|"pause"|"expired";
+  status: "active" | "paused" | "expired";
   subscribedAt: Date;
   cancelledAt?: Date;
   createdAt: Date;

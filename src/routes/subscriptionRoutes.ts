@@ -46,8 +46,8 @@ router.get(
   "/",
   query("status")
     .optional()
-    .isIn(["active", "cancelled", "pending"])
-    .withMessage("Status must be one of 'active', 'cancelled', or 'pending'"),
+    .isIn(["active", "paused", "expired"])
+    .withMessage("Status must be one of 'active', 'paused', or 'expired'"),
   validate,
   SubscriptionController.getUserSubscriptions
 );
@@ -97,8 +97,8 @@ router.put(
   "/:id",
   body("status")
     .optional()
-    .isIn(["active", "pause", "expired"])
-    .withMessage("Status must be one of 'active', 'pause', or 'expired'"),
+    .isIn(["active", "paused", "expired"])
+    .withMessage("Status must be one of 'active', 'paused', or 'expired'"),
   body("lotSize")
     .optional()
     .isFloat({ min: 0.01 })
@@ -118,7 +118,6 @@ router.put(
         throw new AppError("Subscription not found", 404, "not-found");
       }
 
-  
       const updateFields: any = {};
       if (status) updateFields.status = status;
       if (lotSize) updateFields.lotSize = lotSize;
@@ -144,7 +143,6 @@ router.put(
     }
   }
 );
-
 
 /**
  * @route GET /api/subscriptions/check/:botId

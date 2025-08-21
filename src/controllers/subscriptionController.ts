@@ -19,7 +19,7 @@ export async function createSubscription(
       status: { $in: ["active", "paused"] },
     });
 
-    if (existingSubscription) {
+    if (botSubscriptionExists) {
       throw new AppError(
         "You already have an active or paused subscription for this bot.",
         409,

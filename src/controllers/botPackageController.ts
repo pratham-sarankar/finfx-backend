@@ -101,7 +101,17 @@ export const createBotPackage = async (
   }
 };
 
-// Get all BotPackages
+/**
+ * Get all bot packages with populated bot and package details
+ * @route GET /api/botPackages
+ * @access Private
+ * @param {Request} _ - Express request object (unused)
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with array of all bot packages
+ * @description Retrieves all bot packages with populated bot and package information,
+ *              transforming the response to use 'id' instead of '_id' and removing __v fields
+ */
 export const getBotPackages = async (
   _: Request,
   res: Response,
@@ -113,35 +123,34 @@ export const getBotPackages = async (
       .populate("packageId")
       .select("-__v");
 
+    // Transform bot packages to improve response structure
     const transformedBotPackages = botPackages.map((botPackage) => {
       const botPackageObj = botPackage.toObject();
       const transformedBotPackage: any = {
         id: botPackageObj._id,
-        bot:{
-         
-           ...botPackageObj.botId,
-            id: botPackageObj.botId._id,
+        bot: {
+          ...botPackageObj.botId,
+          id: botPackageObj.botId._id,
         },
-        package:{
-         ...botPackageObj.packageId,
-         id:botPackageObj.packageId._id
-
+        package: {
+          ...botPackageObj.packageId,
+          id: botPackageObj.packageId._id
         },
-
         ...botPackageObj,
       };
-      delete transformedBotPackage.package._id
-      delete transformedBotPackage.bot._id
-      delete transformedBotPackage._id
-      delete transformedBotPackage.bot.__v
-      delete transformedBotPackage.package.__v
-      delete transformedBotPackage.bot._id
-      delete transformedBotPackage.packageId
+      
+      // Clean up unwanted fields for cleaner response
+      delete transformedBotPackage.package._id;
+      delete transformedBotPackage.bot._id;
+      delete transformedBotPackage._id;
+      delete transformedBotPackage.bot.__v;
+      delete transformedBotPackage.package.__v;
+      delete transformedBotPackage.packageId;
       delete transformedBotPackage.botId;
+      
       return transformedBotPackage;
     });
 
-    
     return res.status(200).json({
       success: true,
       data: transformedBotPackages,
@@ -151,7 +160,17 @@ export const getBotPackages = async (
   }
 };
 
-// Get a single BotPackage by ID
+/**
+ * Get a single bot package by ID
+ * @route GET /api/botPackages/:id
+ * @access Private
+ * @param {Request} req - Express request object containing bot package ID in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with bot package data
+ * @throws {AppError} 400 - Invalid bot package ID format
+ * @throws {AppError} 404 - Bot package not found
+ */
 export const getBotPackageById = async (
   req: Request,
   res: Response,
@@ -200,7 +219,17 @@ delete transformedBotPackage._id;
   }
 };
 
-// Update a BotPackage
+/**
+ * Update a bot package price
+ * @route PUT /api/botPackages/:id
+ * @access Private
+ * @param {Request} req - Express request object containing bot package ID and new price
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with updated bot package data
+ * @throws {AppError} 400 - Missing or invalid price
+ * @throws {AppError} 404 - Bot package not found
+ */
 export const updateBotPackage = async (
   req: Request,
   res: Response,
@@ -208,6 +237,8 @@ export const updateBotPackage = async (
 ) => {
   try {
     const { price } = req.body;
+    
+    // Validate price field presence
     if (price === undefined || price === null) {
       throw new AppError(
         "Please provide a valid price.",
@@ -215,14 +246,18 @@ export const updateBotPackage = async (
         "missing-required-fields"
       );
     }
+    
+    // Validate price data type and value
     if (typeof price !== "number" || price < 0) {
       throw new AppError("Please provide a valid price.", 400, "invalid-price");
     }
+    
     const botPackage = await BotPackage.findByIdAndUpdate(
       req.params.id,
       { $set: { price } },
       { new: true, runValidators: true }
     );
+    
     if (!botPackage) {
       throw new AppError(
         "The requested bot package could not be found.",
@@ -230,6 +265,7 @@ export const updateBotPackage = async (
         "botpackage-not-found"
       );
     }
+    
     return res.status(200).json({
       success: true,
       message: "BotPackage updated successfully",
@@ -240,7 +276,16 @@ export const updateBotPackage = async (
   }
 };
 
-// Delete a BotPackage
+/**
+ * Delete a bot package by ID
+ * @route DELETE /api/botPackages/:id
+ * @access Private
+ * @param {Request} req - Express request object containing bot package ID in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming deletion
+ * @throws {AppError} 404 - Bot package not found
+ */
 export const deleteBotPackage = async (
   req: Request,
   res: Response,
@@ -248,12 +293,14 @@ export const deleteBotPackage = async (
 ) => {
   try {
     const botPackage = await BotPackage.findByIdAndDelete(req.params.id);
-    if (!botPackage)
+    if (!botPackage) {
       throw new AppError(
         "The requested bot package could not be found.",
         404,
         "botpackage-not-found"
       );
+    }
+    
     return res.status(200).json({
       success: true,
       message: "BotPackage deleted",
@@ -263,6 +310,17 @@ export const deleteBotPackage = async (
   }
 };
 
+/**
+ * Get all bot packages for a specific bot
+ * @route GET /api/botPackages/bot/:botId
+ * @access Private
+ * @param {Request} req - Express request object containing bot ID in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with bot packages for the specified bot
+ * @throws {AppError} 400 - Missing bot ID or invalid format
+ * @throws {AppError} 404 - Bot not found
+ */
 export const getBotPackageByBotId = async (
   req: Request,
   res: Response,
@@ -271,6 +329,7 @@ export const getBotPackageByBotId = async (
   try {
     const botId = req.params.botId;
 
+    // Validate bot ID presence
     if (!botId) {
       throw new AppError(
         "Please provide all required fields.",
@@ -279,7 +338,7 @@ export const getBotPackageByBotId = async (
       );
     }
 
-    // Validate ObjectId format
+    // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(botId)) {
       throw new AppError(
         "Invalid request. Please try again.",
@@ -287,7 +346,8 @@ export const getBotPackageByBotId = async (
         "invalid-request"
       );
     }
-    // Check if bot exists
+    
+    // Verify bot exists
     const botExists = await Bot.findById(botId);
     if (!botExists) {
       throw new AppError(
@@ -296,37 +356,41 @@ export const getBotPackageByBotId = async (
         "bot-not-found"
       );
     }
-    // Find all BotPackages for this bot
+    
+    // Find all bot packages for this specific bot
     const botPackages = await BotPackage.find({ botId })
       .populate("botId")
-      .populate("packageId").select("-__v")
+      .populate("packageId")
+      .select("-__v");
 
-const transformedBotPackages = botPackages.map((botPackage) => {
-  const botPackageObj = botPackage.toObject();
+    // Transform bot packages for cleaner response structure
+    const transformedBotPackages = botPackages.map((botPackage) => {
+      const botPackageObj = botPackage.toObject();
 
-  const transformedBotPackage: any = {
-    id: botPackageObj._id,
-    bot: {
-      ...botPackageObj.botId,
-      id: botPackageObj.botId._id,
-    },
-    package: {
-      ...botPackageObj.packageId,
-      id: botPackageObj.packageId._id,
-    },
-    price: botPackageObj.price,
-  };
+      const transformedBotPackage: any = {
+        id: botPackageObj._id,
+        bot: {
+          ...botPackageObj.botId,
+          id: botPackageObj.botId._id,
+        },
+        package: {
+          ...botPackageObj.packageId,
+          id: botPackageObj.packageId._id,
+        },
+        price: botPackageObj.price,
+      };
 
-  delete transformedBotPackage.bot._id;
-  delete transformedBotPackage.bot.__v;
-  delete transformedBotPackage.package._id;
-  delete transformedBotPackage.package.__v;
-  delete transformedBotPackage.botId;
-  delete transformedBotPackage.packageId;
-  delete transformedBotPackage._id;
+      // Clean up unwanted fields for cleaner response
+      delete transformedBotPackage.bot._id;
+      delete transformedBotPackage.bot.__v;
+      delete transformedBotPackage.package._id;
+      delete transformedBotPackage.package.__v;
+      delete transformedBotPackage.botId;
+      delete transformedBotPackage.packageId;
+      delete transformedBotPackage._id;
 
-  return transformedBotPackage;
-});
+      return transformedBotPackage;
+    });
 
     return res.status(200).json({
       success: true,

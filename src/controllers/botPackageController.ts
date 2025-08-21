@@ -1,3 +1,8 @@
+/**
+ * Bot Package Controller
+ * Handles CRUD operations for bot-package associations
+ * Bot packages represent pricing plans for specific trading bots
+ */
 import Bot from "../models/Bot";
 import BotPackage from "../models/BotPackage";
 import { NextFunction, Request, Response } from "express";
@@ -5,7 +10,18 @@ import Package from "../models/Package";
 import mongoose from "mongoose";
 import { AppError } from "../middleware/errorHandler";
 
-// Create a new BotPackage
+/**
+ * Create a new bot package association
+ * @route POST /api/botPackages
+ * @access Private
+ * @param {Request} req - Express request object containing botId, packageId, and price
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with created bot package data
+ * @throws {AppError} 400 - Missing required fields or invalid data format
+ * @throws {AppError} 404 - Bot or package not found
+ * @throws {AppError} 409 - Bot package combination already exists
+ */
 export const createBotPackage = async (
   req: Request,
   res: Response,
@@ -13,6 +29,8 @@ export const createBotPackage = async (
 ) => {
   try {
     const { botId, packageId, price } = req.body;
+    
+    // Validate required fields and data types
     if (
       !botId ||
       !packageId ||
@@ -27,7 +45,8 @@ export const createBotPackage = async (
         "missing-required-fields"
       );
     }
-    // Validate ObjectId format
+    
+    // Validate ObjectId format for bot and package IDs
     if (
       !mongoose.Types.ObjectId.isValid(botId) ||
       !mongoose.Types.ObjectId.isValid(packageId)
@@ -38,7 +57,8 @@ export const createBotPackage = async (
         "invalid-request"
       );
     }
-    // Check if botId exists
+    
+    // Verify bot exists
     const botExists = await Bot.findById(botId);
     if (!botExists) {
       throw new AppError(
@@ -47,7 +67,8 @@ export const createBotPackage = async (
         "bot-not-found"
       );
     }
-    // Check if packageId exists
+    
+    // Verify package exists
     const packageExists = await Package.findById(packageId);
     if (!packageExists) {
       throw new AppError(
@@ -56,6 +77,8 @@ export const createBotPackage = async (
         "package-not-found"
       );
     }
+    
+    // Check if bot-package combination already exists
     const existing = await BotPackage.findOne({ botId, packageId });
     if (existing) {
       throw new AppError(
@@ -64,8 +87,10 @@ export const createBotPackage = async (
         "botpackage-already-exists"
       );
     }
+    
     const botPackage = new BotPackage({ botId, packageId, price });
     await botPackage.save();
+    
     return res.status(201).json({
       success: true,
       message: "BotPackage created successfully",

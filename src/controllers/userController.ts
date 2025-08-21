@@ -1,10 +1,26 @@
+/**
+ * User Controller
+ * Handles CRUD operations for user management
+ * Provides admin-level user management functionality with pagination and validation
+ */
 import User from "../models/User";
 import { AppError } from "../middleware/errorHandler";
 import bcrypt from "bcryptjs";
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 
-// Create a new user
+/**
+ * Create a new user
+ * @route POST /api/users
+ * @access Private (Admin)
+ * @param {Request} req - Express request object containing user data
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with created user data
+ * @throws {AppError} 400 - Missing required fields
+ * @throws {AppError} 409 - Email already exists
+ * @description Creates a new user with provided details, excluding password from response
+ */
 export const createUser = async (
   req: Request,
   res: Response,
@@ -12,17 +28,25 @@ export const createUser = async (
 ) => {
   try {
     const { fullName, email, phoneNumber, password } = req.body;
+    
+    // Validate required fields
     if (!fullName || !email || !phoneNumber || !password) {
       throw new AppError("All fields are required", 400, "missing-fields");
     }
+    
+    // Check for existing user with same email
     const existing = await User.findOne({ email });
     if (existing) {
       throw new AppError("Email already in use", 409, "email-exists");
     }
+    
     const user = await User.create({ fullName, email, phoneNumber, password });
+    
+    // Transform response to exclude password and replace _id with id
     const userObj = user.toObject();
     const { _id, __v, password: pwd, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
+    
     res.status(201).json({
       success: true,
       message: "User created successfully",
@@ -33,21 +57,31 @@ export const createUser = async (
   }
 };
 
-// Get all users
+/**
+ * Get all users with pagination
+ * @route GET /api/users?n=10&p=1
+ * @access Private (Admin)
+ * @param {Request} req - Express request object with optional query params (n=perPage, p=page)
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with paginated user data
+ * @description Retrieves users with pagination support. Default: 10 users per page, page 1
+ */
 export const getUsers = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    // Parse pagination params
-    let n = parseInt(req.query.n as string, 10);
-    let p = parseInt(req.query.p as string, 10);
+    // Parse and validate pagination parameters
+    let n = parseInt(req.query.n as string, 10); // Number of users per page
+    let p = parseInt(req.query.p as string, 10); // Page number
 
     // Set defaults if not provided or invalid
     n = isNaN(n) || n <= 0 ? 10 : n;
     p = isNaN(p) || p <= 0 ? 1 : p;
 
+    // Calculate total users and pages
     const totalUsers = await User.countDocuments();
     const totalPages = Math.ceil(totalUsers / n);
 
@@ -63,11 +97,13 @@ export const getUsers = async (
       });
     }
 
+    // Fetch users with pagination, excluding sensitive fields
     const users = await User.find()
       .select("-__v -password")
       .skip((p - 1) * n)
       .limit(n);
 
+    // Transform users to replace _id with id
     const transformedUsers = users.map((user) => {
       const userObj = user.toObject();
       const { _id, __v, password: pwd, ...rest } = userObj;
@@ -87,7 +123,17 @@ export const getUsers = async (
   }
 };
 
-// Get single user by ID
+/**
+ * Get single user by ID
+ * @route GET /api/users/:id
+ * @access Private (Admin)
+ * @param {Request} req - Express request object containing user ID in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with user data
+ * @throws {AppError} 400 - Invalid user ID format
+ * @throws {AppError} 404 - User not found
+ */
 export const getUserById = async (
   req: Request,
   res: Response,
@@ -95,24 +141,43 @@ export const getUserById = async (
 ) => {
   try {
     const { id } = req.params;
+    
+    // Validate ID presence
     if (!id) {
       throw new AppError("Id not found", 404, "id-not-found");
     }
+    
+    // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid user id format", 400, "invalid-id-format");
     }
+    
     const user = await User.findById(id).select("-__v -password");
     if (!user) throw new AppError("User not found", 404, "user-not-found");
+    
+    // Transform user to replace _id with id
     const userObj = user.toObject();
     const { _id, __v, password: pwd, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
+    
     return res.status(200).json({ success: true, data: transformedUser });
   } catch (error) {
     return next(error);
   }
 };
 
-// Update user by ID
+/**
+ * Update user by ID
+ * @route PUT /api/users/:id
+ * @access Private (Admin)
+ * @param {Request} req - Express request object containing user ID and update data
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with updated user data
+ * @throws {AppError} 400 - Invalid user ID or missing required fields
+ * @throws {AppError} 404 - User not found
+ * @description Updates user information. Password is optional and will be hashed if provided
+ */
 export const updateUser = async (
   req: Request,
   res: Response,
@@ -120,13 +185,20 @@ export const updateUser = async (
 ) => {
   try {
     const { id } = req.params;
+    
+    // Validate ID presence
     if (!id) {
       throw new AppError("Id not found", 404, "id-not-found");
     }
+    
+    // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid user id ", 400, "invalid-id");
     }
+    
     const { fullName, email, phoneNumber, password } = req.body;
+    
+    // Validate required fields (password is optional)
     if (!fullName || !email || !phoneNumber) {
       throw new AppError(
         "All fields except password are required",
@@ -134,19 +206,28 @@ export const updateUser = async (
         "missing-fields"
       );
     }
+    
+    // Build update object
     const updateData: any = { fullName, email, phoneNumber };
+    
+    // Hash password if provided
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
+    
     const user = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
       context: "query",
     }).select("-__v -password");
+    
     if (!user) throw new AppError("User not found", 404, "user-not-found");
+    
+    // Transform user to replace _id with id
     const userObj = user.toObject();
     const { _id, __v, password: pwd, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
+    
     res.status(200).json({
       success: true,
       message: "User updated successfully",
@@ -157,7 +238,18 @@ export const updateUser = async (
   }
 };
 
-// Delete user by ID
+/**
+ * Delete user by ID
+ * @route DELETE /api/users/:id
+ * @access Private (Admin)
+ * @param {Request} req - Express request object containing user ID in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming deletion
+ * @throws {AppError} 400 - Invalid user ID format
+ * @throws {AppError} 404 - User not found
+ * @description Permanently deletes a user from the database
+ */
 export const deleteUser = async (
   req: Request,
   res: Response,
@@ -165,14 +257,20 @@ export const deleteUser = async (
 ) => {
   try {
     const { id } = req.params;
+    
+    // Validate ID presence
     if (!id) {
       throw new AppError("Id not found", 404, "id-not-found");
     }
+    
+    // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid user id ", 400, "invalid-id");
     }
+    
     const user = await User.findByIdAndDelete(id);
     if (!user) throw new AppError("User not found", 404, "user-not-found");
+    
     res
       .status(200)
       .json({ success: true, message: "User deleted successfully" });

@@ -49,6 +49,7 @@ const botSubscriptionSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["active", "paused", "expired"],
+      enum: ["active", "paused", "expired"],
       default: "active",
     },
     subscribedAt: {
@@ -86,7 +87,7 @@ botSubscriptionSchema.virtual("bot", {
 });
 
 // Virtual to check if subscription is expired
-botSubscriptionSchema.virtual("isExpired").get(function() {
+botSubscriptionSchema.virtual("isExpired").get(function () {
   return this.expiresAt < new Date();
 });
 
@@ -100,7 +101,11 @@ botSubscriptionSchema.index({ expiresAt: 1 }); // Index for expiration date quer
 
 botSubscriptionSchema.pre<IBotSubscription>("save", async function (next) {
   // Check if subscription has expired and update status
-  if (this.expiresAt && this.expiresAt < new Date() && this.status !== "expired") {
+  if (
+    this.expiresAt &&
+    this.expiresAt < new Date() &&
+    this.status !== "expired"
+  ) {
     this.status = "expired";
   }
 

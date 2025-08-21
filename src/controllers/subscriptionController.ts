@@ -16,12 +16,12 @@ export async function createSubscription(
     const botSubscriptionExists = await BotSubscription.findOne({
       userId: req.user._id,
       botId,
-      botPackageId,
-      status: "active",
+      status: { $in: ["active", "paused"] },
     });
-    if (botSubscriptionExists) {
+
+    if (existingSubscription) {
       throw new AppError(
-        "You are already subscribed to this bot.",
+        "You already have an active or paused subscription for this bot.",
         409,
         "already-subscribed"
       );
@@ -30,21 +30,13 @@ export async function createSubscription(
     // Fetch the bot package to get the package ID
     const botPackage = await BotPackage.findById(botPackageId);
     if (!botPackage) {
-      throw new AppError(
-        "Bot package not found",
-        404,
-        "bot-package-not-found"
-      );
+      throw new AppError("Bot package not found", 404, "bot-package-not-found");
     }
 
     // Fetch the package to get the duration
     const packageDetails = await Package.findById(botPackage.packageId);
     if (!packageDetails) {
-      throw new AppError(
-        "Package not found",
-        404,
-        "package-not-found"
-      );
+      throw new AppError("Package not found", 404, "package-not-found");
     }
 
     // Calculate expiresAt date by adding duration days to current date

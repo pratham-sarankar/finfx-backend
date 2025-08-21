@@ -118,7 +118,6 @@ router.put(
         throw new AppError("Subscription not found", 404, "not-found");
       }
 
-  
       const updateFields: any = {};
       if (status) updateFields.status = status;
       if (lotSize) updateFields.lotSize = lotSize;
@@ -144,7 +143,6 @@ router.put(
     }
   }
 );
-
 
 /**
  * @route GET /api/subscriptions/check/:botId

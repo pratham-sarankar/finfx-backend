@@ -1,20 +1,35 @@
+/**
+ * Bot Model
+ * Represents trading bots with their configuration and performance metrics
+ * Used for algorithmic trading strategies and signal generation
+ */
 import mongoose, { Document } from "mongoose";
 
 /**
  * Interface for Bot document
+ * @interface IBot
+ * @extends {Document}
  */
 export interface IBot extends Document {
+  /** Unique name identifier for the trading bot */
   name: string;
+  /** Detailed description of the bot's trading strategy and purpose */
   description: string;
+  /** Recommended capital amount for optimal bot performance */
   recommendedCapital: number;
+  /** Optional duration string indicating performance tracking period */
   performanceDuration?: string;
+  /** Optional script/symbol that the bot trades */
   script?: string;
+  /** Document creation timestamp */
   createdAt: Date;
+  /** Document last update timestamp */
   updatedAt: Date;
 }
 
 /**
- * Bot Schema
+ * Bot Schema Definition
+ * Defines validation rules and structure for trading bot documents
  */
 const botSchema = new mongoose.Schema(
   {
@@ -43,19 +58,20 @@ const botSchema = new mongoose.Schema(
         message:
           "Performance duration must be one of: 1D, 1W, 1M, 3M, 6M, 1Y, ALL",
       },
-      default: "1M",
+      default: "1M", // Default performance tracking period
     },
     script: {
       type: String,
       trim: true,
       maxlength: [10, "Script code cannot exceed 10 characters"],
-      default: "USD",
+      default: "USD", // Default trading script/symbol
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt fields
-    versionKey: false,
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    versionKey: false, // Removes __v field
     toJSON: {
+      // Transform output to use 'id' instead of '_id'
       transform(_doc, ret: any) {
         ret.id = ret._id;
         delete ret._id;
@@ -64,6 +80,7 @@ const botSchema = new mongoose.Schema(
   }
 );
 
+// Create and export the Bot model
 const Bot = mongoose.model<IBot>("Bot", botSchema);
 
 export default Bot;

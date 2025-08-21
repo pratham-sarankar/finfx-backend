@@ -1,3 +1,9 @@
+/**
+ * Bot Package Routes
+ * Defines API endpoints for bot-package association management
+ * Handles pricing configurations for specific bot and package combinations
+ * All routes require authentication
+ */
 import express from "express";
 import {
   createBotPackage,
@@ -11,24 +17,49 @@ import { auth } from "../middleware/auth";
 
 const router = express.Router();
 
+// Apply authentication middleware to all bot package routes
 router.use(auth);
 
-// Get all botPackages
+/**
+ * @route GET /api/botPackages
+ * @desc Get all bot packages with populated bot and package details
+ * @access Private
+ */
 router.get("/", getBotPackages);
 
-// Get all bot packages for a specific bot
+/**
+ * @route GET /api/botPackages/bot/:botId
+ * @desc Get all packages available for a specific bot
+ * @access Private
+ */
 router.get("/bot/:botId", getBotPackageByBotId);
 
-// Get a single bot package by its own ID
+/**
+ * @route GET /api/botPackages/id/:id
+ * @desc Get a specific bot package by its ID
+ * @access Private
+ */
 router.get("/id/:id", getBotPackageById);
 
-// Create new bot package 
+/**
+ * @route POST /api/botPackages
+ * @desc Create a new bot package association with pricing
+ * @access Private
+ */
 router.post("/", createBotPackage);
 
-// Update a bot package 
+/**
+ * @route PUT /api/botPackages/:id
+ * @desc Update the price of an existing bot package
+ * @access Private
+ */
 router.put("/:id", updateBotPackage);
 
-// Delete a bot package 
+/**
+ * @route DELETE /api/botPackages/:id
+ * @desc Delete a bot package association
+ * @access Private
+ */
 router.delete("/:id", deleteBotPackage);
 
 export default router;

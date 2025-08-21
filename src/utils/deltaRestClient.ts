@@ -1,10 +1,28 @@
+/**
+ * Delta Exchange REST API Client
+ * Provides a client interface for interacting with Delta Exchange trading platform
+ * Handles authentication, signature generation, and API requests
+ */
 import axios from "axios";
 import * as crypto from "crypto";
 
+/**
+ * Delta Exchange REST API Client Class
+ * Manages authenticated requests to Delta Exchange API endpoints
+ */
 export class DeltaRestClient {
+  /** Axios client instance configured for Delta Exchange API */
   private client: ReturnType<typeof axios.create>;
+  /** API secret key for signature generation */
   private apiSecret: string;
 
+  /**
+   * Initialize Delta REST client with authentication credentials
+   * @param {string} baseUrl - Base URL for Delta Exchange API
+   * @param {string} apiKey - API key for authentication
+   * @param {string} apiSecret - API secret for signature generation
+   * @param {number} [timestamp] - Optional timestamp for request headers
+   */
   constructor(
     baseUrl: string,
     apiKey: string,
@@ -13,6 +31,7 @@ export class DeltaRestClient {
   ) {
     this.apiSecret = apiSecret;
 
+    // Create axios client with default configuration
     this.client = axios.create({
       baseURL: baseUrl,
       headers: {
@@ -23,6 +42,14 @@ export class DeltaRestClient {
     });
   }
 
+  /**
+   * Generate HMAC SHA256 signature for API authentication
+   * @param {string} path - API endpoint path
+   * @param {string} method - HTTP method (GET, POST, etc.)
+   * @param {string} [body=""] - Request body (empty for GET requests)
+   * @returns {string} Generated signature in hexadecimal format
+   * @private
+   */
   private generateSignature(
     path: string,
     method: string,
@@ -35,6 +62,12 @@ export class DeltaRestClient {
       .digest("hex");
   }
 
+  /**
+   * Get wallet balances from Delta Exchange
+   * @param {number} [assetId] - Optional specific asset ID to filter balances
+   * @returns {Promise<any>} Promise resolving to balance data
+   * @throws {Error} API request errors
+   */
   async getBalances(assetId?: number) {
     const path = "/v2/wallet/balances";
     const method = "GET";
@@ -50,6 +83,11 @@ export class DeltaRestClient {
     return response.data;
   }
 
+  /**
+   * Get account information from Delta Exchange
+   * @returns {Promise<any>} Promise resolving to account information
+   * @throws {Error} API request errors with descriptive message
+   */
   async getAccountInfo() {
     try {
       const path = "/v2/account";

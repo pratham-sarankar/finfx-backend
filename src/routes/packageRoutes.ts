@@ -1,3 +1,8 @@
+/**
+ * Package Routes
+ * Defines API endpoints for subscription package management
+ * All routes require authentication and provide CRUD operations for packages
+ */
 import express from "express";
 import {
   createPackage,
@@ -8,24 +13,44 @@ import {
 } from "../controllers/packageController";
 import { auth } from "../middleware/auth";
 
-
 const router = express.Router();
 
+// Apply authentication middleware to all package routes
 router.use(auth);
 
-// Get all packages
+/**
+ * @route GET /api/packages
+ * @desc Get all subscription packages
+ * @access Private
+ */
 router.get("/", getPackages);
 
-// single package by ID
+/**
+ * @route GET /api/packages/:id
+ * @desc Get a single package by ID
+ * @access Private
+ */
 router.get("/:id", getPackageById);
 
-// Create a new package 
+/**
+ * @route POST /api/packages
+ * @desc Create a new subscription package
+ * @access Private
+ */
 router.post("/", createPackage);
 
-// Update a package 
+/**
+ * @route PUT /api/packages/:id
+ * @desc Update an existing package by ID
+ * @access Private
+ */
 router.put("/:id", updatePackage);
 
-// Delete a package 
+/**
+ * @route DELETE /api/packages/:id
+ * @desc Delete a package by ID
+ * @access Private
+ */
 router.delete("/:id", deletePackage);
 
 export default router;

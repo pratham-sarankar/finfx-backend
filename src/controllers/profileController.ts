@@ -1,3 +1,8 @@
+/**
+ * Profile Controller
+ * Handles user profile management operations including phone verification,
+ * PIN management, and password updates for authenticated users
+ */
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
@@ -7,7 +12,15 @@ import { createOTP, verifyOTP, checkOTPCooldown } from "../utils/otpUtils";
 /**
  * Update phone number and send verification OTP
  * @route POST /api/profile/phone
- * @requires Authentication
+ * @access Private
+ * @param {Request} req - Express request object containing phoneNumber
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming OTP sent
+ * @throws {AppError} 400 - Missing phone number
+ * @throws {AppError} 404 - User not found
+ * @throws {AppError} 429 - OTP cooldown period active
+ * @description Updates user's phone number and sends OTP for verification
  */
 export const updatePhoneAndSendOTP = async (
   req: Request,
@@ -66,9 +79,16 @@ export const updatePhoneAndSendOTP = async (
 };
 
 /**
- * Verify phone OTP
+ * Verify phone number OTP
  * @route POST /api/profile/phone/verify
- * @requires Authentication
+ * @access Private
+ * @param {Request} req - Express request object containing OTP
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming phone verification
+ * @throws {AppError} 400 - Missing OTP or invalid OTP
+ * @throws {AppError} 404 - User not found
+ * @description Verifies phone number OTP and marks user's phone as verified
  */
 export const verifyPhoneOTP = async (
   req: Request,
@@ -114,9 +134,16 @@ export const verifyPhoneOTP = async (
 };
 
 /**
- * Set user PIN
+ * Set user security PIN
  * @route POST /api/profile/pin
- * @requires Authentication
+ * @access Private
+ * @param {Request} req - Express request object containing PIN
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming PIN was set
+ * @throws {AppError} 400 - Invalid PIN format or length
+ * @throws {AppError} 404 - User not found
+ * @description Sets a 4-digit security PIN for the authenticated user
  */
 export const setPin = async (
   req: Request,
@@ -157,9 +184,17 @@ export const setPin = async (
 };
 
 /**
- * Verify user PIN
+ * Verify user security PIN
  * @route POST /api/profile/verify-pin
- * @requires Authentication
+ * @access Private
+ * @param {Request} req - Express request object containing PIN
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming PIN verification
+ * @throws {AppError} 400 - Missing PIN
+ * @throws {AppError} 404 - User not found or PIN not set
+ * @throws {AppError} 401 - Invalid PIN
+ * @description Verifies the user's security PIN against stored hash
  */
 export const verifyPin = async (
   req: Request,
@@ -205,7 +240,15 @@ export const verifyPin = async (
 /**
  * Update user password
  * @route PUT /api/profile/password
- * @requires Authentication
+ * @access Private
+ * @param {Request} req - Express request object containing current and new password
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming password update
+ * @throws {AppError} 400 - Missing password fields or invalid password length
+ * @throws {AppError} 404 - User not found
+ * @throws {AppError} 401 - Invalid current password
+ * @description Updates user's password after verifying current password
  */
 export const updatePassword = async (
   req: Request,

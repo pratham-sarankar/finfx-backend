@@ -33,6 +33,7 @@ This document provides a comprehensive list of all error codes used in the Zyrot
 | ------------------------- | ----------- | ----------------------------------------------------------------- |
 | `missing-required-fields` | 400         | Required fields (fullName, email, password) are missing in signup |
 | `email-already-exists`    | 409         | Email address is already registered                               |
+| `phone-already-exists`    | 409         | Phone number is already registered                                |
 
 ### Email Verification Error Codes
 

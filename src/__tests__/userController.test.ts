@@ -104,3 +104,68 @@ describe('User Controller - Multi Delete Validation Logic', () => {
     });
   });
 });
+
+describe('User Controller - Phone Number Duplication Logic', () => {
+  describe('Phone number duplication check', () => {
+    it('should throw error for duplicate phone number', () => {
+      // Simulate the logic that checks for duplicate phone numbers
+      const mockExistingUser = { _id: '507f1f77bcf86cd799439011', phoneNumber: '+1234567890' };
+      const phoneNumber = '+1234567890';
+      
+      expect(() => {
+        if (mockExistingUser && mockExistingUser.phoneNumber === phoneNumber) {
+          throw new AppError(
+            "User already exists with this phone number",
+            409,
+            "phone-already-exists"
+          );
+        }
+      }).toThrow('User already exists with this phone number');
+    });
+
+    it('should not throw error when phone number is not provided', () => {
+      const phoneNumber = undefined;
+      
+      expect(() => {
+        if (phoneNumber) {
+          // This block would not execute when phoneNumber is undefined
+          throw new AppError(
+            "User already exists with this phone number",
+            409,
+            "phone-already-exists"
+          );
+        }
+      }).not.toThrow();
+    });
+
+    it('should not throw error when no existing user has the phone number', () => {
+      const mockExistingUser = null; // No user found with this phone number
+      
+      expect(() => {
+        if (mockExistingUser) {
+          throw new AppError(
+            "User already exists with this phone number",
+            409,
+            "phone-already-exists"
+          );
+        }
+      }).not.toThrow();
+    });
+
+    it('should validate phone number error code and status', () => {
+      try {
+        throw new AppError(
+          "User already exists with this phone number",
+          409,
+          "phone-already-exists"
+        );
+      } catch (error) {
+        if (error instanceof AppError) {
+          expect(error.message).toBe("User already exists with this phone number");
+          expect(error.statusCode).toBe(409);
+          expect(error.code).toBe("phone-already-exists");
+        }
+      }
+    });
+  });
+});

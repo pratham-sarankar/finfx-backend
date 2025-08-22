@@ -37,6 +37,18 @@ export const createUser = async (
       throw new AppError("Email already in use", 409, "email-exists");
     }
     
+    // Check for existing user with same phone number (if provided)
+    if (phoneNumber) {
+      const existingPhone = await User.findOne({ phoneNumber });
+      if (existingPhone) {
+        throw new AppError(
+          "User already exists with this phone number",
+          409,
+          "phone-already-exists"
+        );
+      }
+    }
+    
     const user = await User.create({ fullName, email, phoneNumber, password });
     
     // Transform response to exclude password and replace _id with id

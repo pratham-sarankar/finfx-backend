@@ -90,8 +90,8 @@ botSubscriptionSchema.virtual("isExpired").get(function () {
   return this.expiresAt < new Date();
 });
 
-// Compound index to ensure one subscription per user per bot
-botSubscriptionSchema.index({ userId: 1, botId: 1 }, { unique: true });
+// Indexes for efficient querying (removed unique constraint to allow renewals after expiration)
+botSubscriptionSchema.index({ userId: 1, botId: 1 });
 
 // Indexes for faster queries
 botSubscriptionSchema.index({ userId: 1, status: 1 });
@@ -115,6 +115,24 @@ botSubscriptionSchema.pre<IBotSubscription>("save", async function (next) {
     this.isModified("botId") ||
     this.isModified("botPackageId")
   ) {
+    // For new subscriptions, check if user already has an active subscription for the same bot
+    if (this.isNew) {
+      const existingActiveSubscription = await mongoose.model<IBotSubscription>("BotSubscription").findOne({
+        userId: this.userId,
+        botId: this.botId,
+        status: { $in: ["active", "paused"] },
+        _id: { $ne: this._id } // Exclude current document
+      });
+
+      if (existingActiveSubscription) {
+        throw new AppError(
+          "You already have an active or paused subscription for this bot.",
+          409,
+          "already-subscribed"
+        );
+      }
+    }
+
     // Check if user exists
     const userExists = await User.findById(this.userId);
     if (!userExists) {

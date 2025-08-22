@@ -53,6 +53,16 @@ export const errorHandler = (
     });
   }
 
+  // Handle MongoDB duplicate key errors (code 11000)
+  if ((err as any).code === 11000) {
+    const message = "Duplicate entry found. Resource already exists.";
+    return res.status(409).json({
+      status: "fail",
+      message,
+      errorCode: "duplicate-entry",
+    });
+  }
+
   // Log unexpected errors
   console.error("ERROR 💥", err);
 

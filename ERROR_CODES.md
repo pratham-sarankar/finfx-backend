@@ -79,6 +79,12 @@ This document provides a comprehensive list of all error codes used in the Zyrot
 | `missing-password-fields`  | 400         | Current password and new password are required     |
 | `invalid-current-password` | 401         | Current password is incorrect                      |
 
+### Generic Database Error Codes
+
+| Code                | HTTP Status | Description                                        |
+| ------------------- | ----------- | -------------------------------------------------- |
+| `duplicate-entry`   | 409         | Generic MongoDB duplicate key error fallback      |
+
 ## Frontend Implementation
 
 When handling these errors in the frontend, you should:

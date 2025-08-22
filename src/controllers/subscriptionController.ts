@@ -29,21 +29,6 @@ export async function createSubscription(
   try {
     const { botId, botPackageId, lotSize } = req.body;
 
-    // Check if user already has an active subscription for this bot
-    const botSubscriptionExists = await BotSubscription.findOne({
-      userId: req.user._id,
-      botId,
-      status: { $in: ["active", "paused"] },
-    });
-
-    if (botSubscriptionExists) {
-      throw new AppError(
-        "You already have an active or paused subscription for this bot.",
-        409,
-        "already-subscribed"
-      );
-    }
-
     // Fetch the bot package to get the package ID and validate existence
     const botPackage = await BotPackage.findById(botPackageId);
     if (!botPackage) {
@@ -60,7 +45,7 @@ export async function createSubscription(
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + packageDetails.duration);
 
-    // Create new subscription
+    // Create new subscription (validation for active subscriptions is handled in the model pre-save hook)
     const subscription = await BotSubscription.create({
       userId: req.user._id,
       botId,

@@ -4,6 +4,8 @@ import { AppError } from "../middleware/errorHandler";
 import axios from "axios";
 import * as crypto from "crypto";
 import { getAllBrokers, addBroker, deleteBroker } from "../controllers/brokerController";
+import validate from "../middleware/validate";
+import { body, param } from "express-validator";
 
 const router = express.Router();
 
@@ -68,7 +70,16 @@ async function getAssetBalance(apiKey: string, apiSecret: string) {
  * @desc Check BTC balance from Binance API
  * @access Private
  */
-router.post("/check-balance", async (req, res) => {
+router.post(
+  "/check-balance", 
+  body("api_key")
+    .notEmpty()
+    .withMessage("API key is required"),
+  body("api_secret")
+    .notEmpty()
+    .withMessage("API secret is required"),
+  validate,
+  async (req, res) => {
   try {
     const { api_key, api_secret } = req.body;
     console.log(api_key, api_secret);
@@ -134,7 +145,16 @@ router.post("/check-balance", async (req, res) => {
  * @desc Get asset balance from Delta Exchange
  * @access Private
  */
-router.post("/asset-delta-balance", async (req, res) => {
+router.post(
+  "/asset-delta-balance", 
+  body("api_key")
+    .notEmpty()
+    .withMessage("API key is required"),
+  body("api_secret")
+    .notEmpty()
+    .withMessage("API secret is required"),
+  validate,
+  async (req, res) => {
   try {
     const { api_key, api_secret } = req.body;
 
@@ -163,8 +183,26 @@ router.post("/asset-delta-balance", async (req, res) => {
 
 // Broker CRUD routes
 router.get("/", getAllBrokers); 
-router.post("/", addBroker);   
-router.delete("/:id", deleteBroker);
+router.post(
+  "/", 
+  body("name")
+    .notEmpty()
+    .withMessage("Broker name is required"),
+  body("apiUrl")
+    .optional()
+    .isURL()
+    .withMessage("API URL must be a valid URL"),
+  validate,
+  addBroker
+);   
+router.delete(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid broker ID"),
+  validate,
+  deleteBroker
+);
 
 
 export default router;

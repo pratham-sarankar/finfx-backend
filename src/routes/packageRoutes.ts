@@ -12,6 +12,8 @@ import {
   deletePackage
 } from "../controllers/packageController";
 import { auth } from "../middleware/auth";
+import validate from "../middleware/validate";
+import { body, param } from "express-validator";
 
 const router = express.Router();
 
@@ -30,27 +32,70 @@ router.get("/", getPackages);
  * @desc Get a single package by ID
  * @access Private
  */
-router.get("/:id", getPackageById);
+router.get(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid package ID"),
+  validate,
+  getPackageById
+);
 
 /**
  * @route POST /api/packages
  * @desc Create a new subscription package
  * @access Private
  */
-router.post("/", createPackage);
+router.post(
+  "/", 
+  body("name")
+    .notEmpty()
+    .withMessage("Package name is required")
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Package name must be between 2 and 100 characters"),
+  body("duration")
+    .notEmpty()
+    .withMessage("Duration is required")
+    .isInt({ min: 1 })
+    .withMessage("Duration must be a positive integer"),
+  validate,
+  createPackage
+);
 
 /**
  * @route PUT /api/packages/:id
  * @desc Update an existing package by ID
  * @access Private
  */
-router.put("/:id", updatePackage);
+router.put(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid package ID"),
+  body("name")
+    .optional()
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Package name must be between 2 and 100 characters"),
+  body("duration")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Duration must be a positive integer"),
+  validate,
+  updatePackage
+);
 
 /**
  * @route DELETE /api/packages/:id
  * @desc Delete a package by ID
  * @access Private
  */
-router.delete("/:id", deletePackage);
+router.delete(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid package ID"),
+  validate,
+  deletePackage
+);
 
 export default router;

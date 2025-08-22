@@ -29,10 +29,7 @@ export const createUser = async (
   try {
     const { fullName, email, phoneNumber, password } = req.body;
     
-    // Validate required fields
-    if (!fullName || !email || !phoneNumber || !password) {
-      throw new AppError("All fields are required", 400, "missing-fields");
-    }
+    // Note: Basic field validation is now handled by express-validator in routes
     
     // Check for existing user with same email
     const existing = await User.findOne({ email });
@@ -299,6 +296,9 @@ export const deleteMultipleUsers = async (
   try {
     const { userIds } = req.body;
     
+    // Note: Basic validation for userIds array and ObjectId format is now handled 
+    // by express-validator in routes, but we keep some business logic checks
+    
     // Validate userIds presence and format
     if (!userIds || !Array.isArray(userIds)) {
       throw new AppError(
@@ -308,7 +308,7 @@ export const deleteMultipleUsers = async (
       );
     }
     
-    // Handle empty array case
+    // Handle empty array case  
     if (userIds.length === 0) {
       throw new AppError(
         "At least one user ID is required",
@@ -317,7 +317,7 @@ export const deleteMultipleUsers = async (
       );
     }
     
-    // Validate all IDs are valid MongoDB ObjectIds
+    // This validation is still kept as a safety check
     const invalidIds = userIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
     if (invalidIds.length > 0) {
       throw new AppError(

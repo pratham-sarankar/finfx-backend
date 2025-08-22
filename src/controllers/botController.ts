@@ -25,14 +25,7 @@ export const createBot = async (
       script,
     } = req.body;
 
-    // Validate required fields
-    if (!name || !description || recommendedCapital === undefined) {
-      throw new AppError(
-        "Please provide name, description, and recommendedCapital",
-        400,
-        "missing-required-fields"
-      );
-    }
+    // Note: Basic validation is now handled by express-validator in routes
 
     // Check if bot with same name already exists
     const existingBot = await Bot.findOne({ name });
@@ -216,7 +209,8 @@ export const updateBot = async (
       script,
     } = req.body;
 
-    // Validate at least one field is provided
+    // Note: Express-validator handles individual field validation, but we still need
+    // to check that at least one field is provided for update
     if (
       !name &&
       !description &&

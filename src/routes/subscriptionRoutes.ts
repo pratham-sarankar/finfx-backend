@@ -4,7 +4,7 @@ import { AppError } from "../middleware/errorHandler";
 import BotSubscription from "../models/BotSubscription";
 import Bot from "../models/Bot";
 import validate from "../middleware/validate";
-import { body, query } from "express-validator";
+import { body, query, param } from "express-validator";
 import * as SubscriptionController from "../controllers/subscriptionController";
 
 const router = express.Router();
@@ -57,7 +57,13 @@ router.get(
  * @desc Get specific subscription
  * @access Private
  */
-router.get("/:id", async (req, res, next) => {
+router.get(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid subscription ID"),
+  validate,
+  async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -95,6 +101,9 @@ router.get("/:id", async (req, res, next) => {
  */
 router.put(
   "/:id",
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid subscription ID"),
   body("status")
     .optional()
     .isIn(["active", "paused", "expired"])
@@ -149,7 +158,13 @@ router.put(
  * @desc Check if user is subscribed to a specific bot
  * @access Private
  */
-router.get("/check/:botId", async (req, res, next) => {
+router.get(
+  "/check/:botId", 
+  param("botId")
+    .isMongoId()
+    .withMessage("Please provide a valid bot ID"),
+  validate,
+  async (req, res, next) => {
   try {
     const { botId } = req.params;
 
@@ -197,7 +212,13 @@ router.get("/check/:botId", async (req, res, next) => {
  * @desc Delete a subscription (permanent removal)
  * @access Private
  */
-router.delete("/:id", async (req, res, next) => {
+router.delete(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid subscription ID"),
+  validate,
+  async (req, res, next) => {
   try {
     const { id } = req.params;
 

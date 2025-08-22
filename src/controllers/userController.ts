@@ -278,3 +278,85 @@ export const deleteUser = async (
     next(error);
   }
 };
+
+/**
+ * Delete multiple users by IDs
+ * @route DELETE /api/users
+ * @access Private (Admin)
+ * @param {Request} req - Express request object containing array of user IDs in body
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response confirming deletions with count
+ * @throws {AppError} 400 - Invalid request body or user ID format
+ * @throws {AppError} 404 - Some or all users not found
+ * @description Permanently deletes multiple users from the database
+ */
+export const deleteMultipleUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userIds } = req.body;
+    
+    // Validate userIds presence and format
+    if (!userIds || !Array.isArray(userIds)) {
+      throw new AppError(
+        "Please provide userIds as an array",
+        400,
+        "invalid-request-body"
+      );
+    }
+    
+    // Handle empty array case
+    if (userIds.length === 0) {
+      throw new AppError(
+        "At least one user ID is required",
+        400,
+        "empty-user-ids-array"
+      );
+    }
+    
+    // Validate all IDs are valid MongoDB ObjectIds
+    const invalidIds = userIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      throw new AppError(
+        `Invalid user IDs: ${invalidIds.join(", ")}`,
+        400,
+        "invalid-user-ids"
+      );
+    }
+    
+    // Delete users and get the result
+    const deleteResult = await User.deleteMany({ _id: { $in: userIds } });
+    
+    // Check if any users were actually deleted
+    if (deleteResult.deletedCount === 0) {
+      throw new AppError(
+        "No users found with the provided IDs",
+        404,
+        "users-not-found"
+      );
+    }
+    
+    // Check if some users were not found (partial success)
+    const notFoundCount = userIds.length - deleteResult.deletedCount;
+    let message = `${deleteResult.deletedCount} user(s) deleted successfully`;
+    
+    if (notFoundCount > 0) {
+      message += `. ${notFoundCount} user(s) were not found`;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message,
+      data: {
+        deletedCount: deleteResult.deletedCount,
+        requestedCount: userIds.length,
+        notFoundCount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -9,7 +9,10 @@
     "build": "tsc && cp -r src/views dist/",
     "migrate": "node scripts/migrate.js",
     "migrate:rollback": "node scripts/migrate.js rollback",
-    "seed": "ts-node seed/seed.ts"
+    "seed": "ts-node seed/seed.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -40,5 +43,14 @@
     "ts-node": "^10.9.2",
     "twilio": "^5.7.0",
     "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/semver": "^7.7.0",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.5",
+    "mongodb-memory-server": "^10.2.0",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1"
   }
 }

@@ -87,7 +87,7 @@ const signalSchema = new mongoose.Schema(
     },
     tradeId: {
       type: String,
-      unique: true, // Ensures trade IDs are unique across all signals
+      // Unique constraint handled by compound index below
     },
     direction: {
       type: String,

@@ -87,7 +87,6 @@ const kycSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
     },
     basicDetails: {
       fullName: {
@@ -128,8 +127,6 @@ const kycSchema = new mongoose.Schema(
       pan: {
         type: String,
         required: [true, "PAN number is required"],
-        unique: true,
-        sparse: true,
         validate: {
           validator: function (value: string) {
             // PAN format: ABCDE1234F
@@ -141,8 +138,6 @@ const kycSchema = new mongoose.Schema(
       aadharNumber: {
         type: String,
         required: [true, "Aadhar number is required"],
-        unique: true,
-        sparse: true,
         validate: {
           validator: function (value: string) {
             // Aadhar format: 12 digits
@@ -275,8 +270,8 @@ const kycSchema = new mongoose.Schema(
 );
 
 // Indexes for faster queries
-kycSchema.index({ userId: 1 });
-kycSchema.index({ "basicDetails.pan": 1 });
-kycSchema.index({ "basicDetails.aadharNumber": 1 });
+kycSchema.index({ userId: 1 }, { unique: true });
+kycSchema.index({ "basicDetails.pan": 1 }, { unique: true, sparse: true });
+kycSchema.index({ "basicDetails.aadharNumber": 1 }, { unique: true, sparse: true });
 
 export default mongoose.model<IKYC>("KYC", kycSchema);

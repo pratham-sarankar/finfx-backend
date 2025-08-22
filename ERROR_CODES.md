@@ -33,6 +33,7 @@ This document provides a comprehensive list of all error codes used in the Zyrot
 | ------------------------- | ----------- | ----------------------------------------------------------------- |
 | `missing-required-fields` | 400         | Required fields (fullName, email, password) are missing in signup |
 | `email-already-exists`    | 409         | Email address is already registered                               |
+| `phone-already-exists`    | 409         | Phone number is already registered                                |
 
 ### Email Verification Error Codes
 
@@ -77,6 +78,12 @@ This document provides a comprehensive list of all error codes used in the Zyrot
 | `invalid-pin`              | 401         | Provided PIN is incorrect                          |
 | `missing-password-fields`  | 400         | Current password and new password are required     |
 | `invalid-current-password` | 401         | Current password is incorrect                      |
+
+### Generic Database Error Codes
+
+| Code                | HTTP Status | Description                                        |
+| ------------------- | ----------- | -------------------------------------------------- |
+| `duplicate-entry`   | 409         | Generic MongoDB duplicate key error fallback      |
 
 ## Frontend Implementation
 

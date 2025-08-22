@@ -35,7 +35,7 @@ export const signup = async (
     const { fullName, email, password } = req.body;
 
     // Note: Basic validation is now handled by express-validator in routes
-    
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -415,9 +415,7 @@ export const resetPassword = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { token, newPassword, confirmPassword } = req.body;
-
-    // Note: Basic validation including password match is now handled by express-validator in routes
+    const { token, newPassword } = req.body;
 
     // Hash the token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");

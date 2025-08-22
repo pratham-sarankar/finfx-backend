@@ -11,7 +11,7 @@ import {
   getSignalsByBot,
 } from "../controllers/signalController";
 import validate from "../middleware/validate";
-import { body, param, query } from "express-validator";
+import { body, param } from "express-validator";
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.use(auth);
 
 // Signal routes
 router.post(
-  "/", 
+  "/",
   body("entryTime")
     .notEmpty()
     .withMessage("Entry time is required")
@@ -60,7 +60,7 @@ router.post(
   createSignal
 );
 router.post(
-  "/bulk", 
+  "/bulk",
   body("signals")
     .isArray({ min: 1 })
     .withMessage("Signals must be a non-empty array"),
@@ -85,18 +85,14 @@ router.post(
 router.get("/", getAllSignals);
 router.get("/user", getUserSignals);
 router.get(
-  "/:id", 
-  param("id")
-    .isMongoId()
-    .withMessage("Please provide a valid signal ID"),
+  "/:id",
+  param("id").isMongoId().withMessage("Please provide a valid signal ID"),
   validate,
   getSignalById
 );
 router.put(
-  "/:id", 
-  param("id")
-    .isMongoId()
-    .withMessage("Please provide a valid signal ID"),
+  "/:id",
+  param("id").isMongoId().withMessage("Please provide a valid signal ID"),
   body("entryTime")
     .optional()
     .isISO8601()
@@ -125,18 +121,14 @@ router.put(
   updateSignal
 );
 router.delete(
-  "/:id", 
-  param("id")
-    .isMongoId()
-    .withMessage("Please provide a valid signal ID"),
+  "/:id",
+  param("id").isMongoId().withMessage("Please provide a valid signal ID"),
   validate,
   deleteSignal
 );
 router.get(
-  "/bot/:botId", 
-  param("botId")
-    .isMongoId()
-    .withMessage("Please provide a valid bot ID"),
+  "/bot/:botId",
+  param("botId").isMongoId().withMessage("Please provide a valid bot ID"),
   validate,
   getSignalsByBot
 );

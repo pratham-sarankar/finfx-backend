@@ -21,14 +21,14 @@ export default function validate(
   next: NextFunction
 ) {
   const result = validationResult(req);
-  
+
   // If validation passes, continue to next middleware
   if (result.isEmpty()) {
     return next();
   }
-  
+
   // Return formatted validation error response
-  return res.json({
+  return res.status(400).json({
     status: "fail",
     message: result.array()[0].msg ?? "Validation Failed",
     errorCode: "validation-failed",

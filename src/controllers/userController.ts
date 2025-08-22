@@ -28,15 +28,15 @@ export const createUser = async (
 ) => {
   try {
     const { fullName, email, phoneNumber, password } = req.body;
-    
+
     // Note: Basic field validation is now handled by express-validator in routes
-    
+
     // Check for existing user with same email
     const existing = await User.findOne({ email });
     if (existing) {
       throw new AppError("Email already in use", 409, "email-exists");
     }
-    
+
     // Check for existing user with same phone number (if provided)
     if (phoneNumber) {
       const existingPhone = await User.findOne({ phoneNumber });
@@ -48,14 +48,14 @@ export const createUser = async (
         );
       }
     }
-    
+
     const user = await User.create({ fullName, email, phoneNumber, password });
-    
+
     // Transform response to exclude password and replace _id with id
     const userObj = user.toObject();
     const { _id, __v, password: pwd, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
-    
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
@@ -150,25 +150,25 @@ export const getUserById = async (
 ) => {
   try {
     const { id } = req.params;
-    
+
     // Validate ID presence
     if (!id) {
       throw new AppError("Id not found", 404, "id-not-found");
     }
-    
+
     // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid user id format", 400, "invalid-id-format");
     }
-    
+
     const user = await User.findById(id).select("-__v -password");
     if (!user) throw new AppError("User not found", 404, "user-not-found");
-    
+
     // Transform user to replace _id with id
     const userObj = user.toObject();
     const { _id, __v, password: pwd, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
-    
+
     return res.status(200).json({ success: true, data: transformedUser });
   } catch (error) {
     return next(error);
@@ -194,19 +194,19 @@ export const updateUser = async (
 ) => {
   try {
     const { id } = req.params;
-    
+
     // Validate ID presence
     if (!id) {
       throw new AppError("Id not found", 404, "id-not-found");
     }
-    
+
     // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid user id ", 400, "invalid-id");
     }
-    
+
     const { fullName, email, phoneNumber, password } = req.body;
-    
+
     // Validate required fields (password is optional)
     if (!fullName || !email || !phoneNumber) {
       throw new AppError(
@@ -215,28 +215,28 @@ export const updateUser = async (
         "missing-fields"
       );
     }
-    
+
     // Build update object
     const updateData: any = { fullName, email, phoneNumber };
-    
+
     // Hash password if provided
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
-    
+
     const user = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
       context: "query",
     }).select("-__v -password");
-    
+
     if (!user) throw new AppError("User not found", 404, "user-not-found");
-    
+
     // Transform user to replace _id with id
     const userObj = user.toObject();
     const { _id, __v, password: pwd, ...rest } = userObj;
     const transformedUser = { ...rest, id: _id };
-    
+
     res.status(200).json({
       success: true,
       message: "User updated successfully",
@@ -266,20 +266,20 @@ export const deleteUser = async (
 ) => {
   try {
     const { id } = req.params;
-    
+
     // Validate ID presence
     if (!id) {
       throw new AppError("Id not found", 404, "id-not-found");
     }
-    
+
     // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid user id ", 400, "invalid-id");
     }
-    
+
     const user = await User.findByIdAndDelete(id);
     if (!user) throw new AppError("User not found", 404, "user-not-found");
-    
+
     res
       .status(200)
       .json({ success: true, message: "User deleted successfully" });
@@ -307,10 +307,10 @@ export const deleteMultipleUsers = async (
 ) => {
   try {
     const { userIds } = req.body;
-    
-    // Note: Basic validation for userIds array and ObjectId format is now handled 
+
+    // Note: Basic validation for userIds array and ObjectId format is now handled
     // by express-validator in routes, but we keep some business logic checks
-    
+
     // Validate userIds presence and format
     if (!userIds || !Array.isArray(userIds)) {
       throw new AppError(
@@ -319,8 +319,8 @@ export const deleteMultipleUsers = async (
         "invalid-request-body"
       );
     }
-    
-    // Handle empty array case  
+
+    // Handle empty array case
     if (userIds.length === 0) {
       throw new AppError(
         "At least one user ID is required",
@@ -328,9 +328,11 @@ export const deleteMultipleUsers = async (
         "empty-user-ids-array"
       );
     }
-    
+
     // This validation is still kept as a safety check
-    const invalidIds = userIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    const invalidIds = userIds.filter(
+      (id) => !mongoose.Types.ObjectId.isValid(id)
+    );
     if (invalidIds.length > 0) {
       throw new AppError(
         `Invalid user IDs: ${invalidIds.join(", ")}`,
@@ -338,10 +340,10 @@ export const deleteMultipleUsers = async (
         "invalid-user-ids"
       );
     }
-    
+
     // Delete users and get the result
     const deleteResult = await User.deleteMany({ _id: { $in: userIds } });
-    
+
     // Check if any users were actually deleted
     if (deleteResult.deletedCount === 0) {
       throw new AppError(
@@ -350,23 +352,23 @@ export const deleteMultipleUsers = async (
         "users-not-found"
       );
     }
-    
+
     // Check if some users were not found (partial success)
     const notFoundCount = userIds.length - deleteResult.deletedCount;
     let message = `${deleteResult.deletedCount} user(s) deleted successfully`;
-    
+
     if (notFoundCount > 0) {
       message += `. ${notFoundCount} user(s) were not found`;
     }
-    
+
     res.status(200).json({
       success: true,
       message,
       data: {
         deletedCount: deleteResult.deletedCount,
         requestedCount: userIds.length,
-        notFoundCount
-      }
+        notFoundCount,
+      },
     });
   } catch (error) {
     next(error);

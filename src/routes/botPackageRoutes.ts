@@ -14,6 +14,8 @@ import {
   getBotPackageByBotId
 } from "../controllers/botPackageController";
 import { auth } from "../middleware/auth";
+import validate from "../middleware/validate";
+import { body, param } from "express-validator";
 
 const router = express.Router();
 
@@ -32,34 +34,85 @@ router.get("/", getBotPackages);
  * @desc Get all packages available for a specific bot
  * @access Private
  */
-router.get("/bot/:botId", getBotPackageByBotId);
+router.get(
+  "/bot/:botId", 
+  param("botId")
+    .isMongoId()
+    .withMessage("Please provide a valid bot ID"),
+  validate,
+  getBotPackageByBotId
+);
 
 /**
  * @route GET /api/botPackages/id/:id
  * @desc Get a specific bot package by its ID
  * @access Private
  */
-router.get("/id/:id", getBotPackageById);
+router.get(
+  "/id/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid bot package ID"),
+  validate,
+  getBotPackageById
+);
 
 /**
  * @route POST /api/botPackages
  * @desc Create a new bot package association with pricing
  * @access Private
  */
-router.post("/", createBotPackage);
+router.post(
+  "/", 
+  body("botId")
+    .notEmpty()
+    .withMessage("Bot ID is required")
+    .isMongoId()
+    .withMessage("Bot ID must be a valid MongoDB ID"),
+  body("packageId")
+    .notEmpty()
+    .withMessage("Package ID is required")
+    .isMongoId()
+    .withMessage("Package ID must be a valid MongoDB ID"),
+  body("price")
+    .notEmpty()
+    .withMessage("Price is required")
+    .isFloat({ min: 0 })
+    .withMessage("Price must be a positive number"),
+  validate,
+  createBotPackage
+);
 
 /**
  * @route PUT /api/botPackages/:id
  * @desc Update the price of an existing bot package
  * @access Private
  */
-router.put("/:id", updateBotPackage);
+router.put(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid bot package ID"),
+  body("price")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Price must be a positive number"),
+  validate,
+  updateBotPackage
+);
 
 /**
  * @route DELETE /api/botPackages/:id
  * @desc Delete a bot package association
  * @access Private
  */
-router.delete("/:id", deleteBotPackage);
+router.delete(
+  "/:id", 
+  param("id")
+    .isMongoId()
+    .withMessage("Please provide a valid bot package ID"),
+  validate,
+  deleteBotPackage
+);
 
 export default router;

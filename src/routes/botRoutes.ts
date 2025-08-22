@@ -11,7 +11,7 @@ import {
   getBotPerformanceOverview,
 } from "../controllers/botController";
 import validate from "../middleware/validate";
-import { body, param, query } from "express-validator";
+import { body, param } from "express-validator";
 
 const router = express.Router();
 

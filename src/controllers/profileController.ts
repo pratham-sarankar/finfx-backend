@@ -31,10 +31,7 @@ export const updatePhoneAndSendOTP = async (
     const { phoneNumber } = req.body;
     const userId = req.user.id;
 
-    // Validate required field
-    if (!phoneNumber) {
-      throw new AppError("Phone number is required", 400, "missing-phone");
-    }
+    // Note: Phone number validation is now handled by express-validator in routes
 
     // Find user
     const user = await User.findById(userId);
@@ -154,14 +151,7 @@ export const setPin = async (
     const { pin } = req.body;
     const userId = req.user.id;
 
-    // Validate PIN
-    if (!pin || !/^\d{6}$/.test(pin)) {
-      throw new AppError(
-        "PIN must be a 6-digit number",
-        400,
-        "invalid-pin-format"
-      );
-    }
+    // Note: PIN format validation is now handled by express-validator in routes
 
     // Find user
     const user = await User.findById(userId);
@@ -259,22 +249,7 @@ export const updatePassword = async (
     const { password, newPassword } = req.body;
     const userId = req.user.id;
 
-    // Validate input
-    if (!password || !newPassword) {
-      throw new AppError(
-        "Current password and new password are required",
-        400,
-        "missing-password-fields"
-      );
-    }
-
-    if (newPassword.length < 8) {
-      throw new AppError(
-        "New password must be at least 8 characters long",
-        400,
-        "password-too-short"
-      );
-    }
+    // Note: Basic password validation is now handled by express-validator in routes
 
     // Get user with password
     const user = await User.findById(userId).select("+password");

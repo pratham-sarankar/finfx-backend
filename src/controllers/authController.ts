@@ -34,15 +34,8 @@ export const signup = async (
   try {
     const { fullName, email, password } = req.body;
 
-    // Validate required fields
-    if (!fullName || !email || !password) {
-      throw new AppError(
-        "Please provide all required fields",
-        400,
-        "missing-required-fields"
-      );
-    }
-
+    // Note: Basic validation is now handled by express-validator in routes
+    
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -81,10 +74,7 @@ export const sendEmailOTP = async (
   try {
     const { email } = req.body;
 
-    // Validate required field
-    if (!email) {
-      throw new AppError("Email is required", 400, "missing-email");
-    }
+    // Note: Email validation is now handled by express-validator in routes
 
     // Check if user exists
     const user = await User.findOne({ email });
@@ -167,14 +157,7 @@ export const login = async (
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
-    if (!email || !password) {
-      throw new AppError(
-        "Please provide email and password",
-        400,
-        "missing-credentials"
-      );
-    }
+    // Note: Basic validation is now handled by express-validator in routes
 
     // Find user and check if they exist
     const user = await User.findOne({ email }).select("+password");
@@ -249,9 +232,7 @@ export const googleAuth = async (
   try {
     const { idToken } = req.body;
 
-    if (!idToken) {
-      throw new AppError("ID token is required", 400, "missing-id-token");
-    }
+    // Note: idToken validation is now handled by express-validator in routes
 
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_IOS_CLIENT_ID) {
       throw new AppError(
@@ -382,9 +363,7 @@ export const forgotPassword = async (
   try {
     const { email } = req.body;
 
-    if (!email) {
-      throw new AppError("Email is required", 400, "missing-email");
-    }
+    // Note: Email validation is now handled by express-validator in routes
 
     // Find user and select reset password fields
     const user = await User.findOne({ email }).select(
@@ -438,26 +417,7 @@ export const resetPassword = async (
   try {
     const { token, newPassword, confirmPassword } = req.body;
 
-    // Validate input
-    if (!token || !newPassword || !confirmPassword) {
-      throw new AppError(
-        "Token, new password, and confirm password are required",
-        400,
-        "missing-reset-fields"
-      );
-    }
-
-    if (newPassword !== confirmPassword) {
-      throw new AppError("Passwords do not match", 400, "passwords-dont-match");
-    }
-
-    if (newPassword.length < 8) {
-      throw new AppError(
-        "Password must be at least 8 characters long",
-        400,
-        "password-too-short"
-      );
-    }
+    // Note: Basic validation including password match is now handled by express-validator in routes
 
     // Hash the token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -500,9 +460,7 @@ export const validateResetToken = async (
   try {
     const { token } = req.body;
 
-    if (!token) {
-      throw new AppError("Token is required", 400, "missing-token");
-    }
+    // Note: Token validation is now handled by express-validator in routes
 
     // Hash the token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");

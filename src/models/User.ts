@@ -20,6 +20,7 @@ export interface IUser extends Document {
   resetPasswordExpires?: Date;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  status: "active" | "inactive";
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -87,6 +88,11 @@ const userSchema = new mongoose.Schema(
     isPhoneVerified: {
       type: Boolean,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
     },
   },
   {

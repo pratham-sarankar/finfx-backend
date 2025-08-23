@@ -169,3 +169,91 @@ describe('User Controller - Phone Number Duplication Logic', () => {
     });
   });
 });
+
+describe('User Controller - Search Query Logic', () => {
+  describe('Search query validation', () => {
+    it('should handle undefined search query', () => {
+      const q: any = undefined;
+      // Test the same logic as in controller but more explicitly
+      const hasValidQuery = q !== undefined && q !== null && typeof q === 'string' && q.trim().length > 0;
+      expect(hasValidQuery).toBe(false);
+    });
+
+    it('should handle empty string search query', () => {
+      const q: any = '';
+      const hasValidQuery = q !== undefined && q !== null && typeof q === 'string' && q.trim().length > 0;
+      expect(hasValidQuery).toBe(false);
+    });
+
+    it('should handle whitespace-only search query', () => {
+      const q: any = '   ';
+      const hasValidQuery = q !== undefined && q !== null && typeof q === 'string' && q.trim().length > 0;
+      expect(hasValidQuery).toBe(false);
+    });
+
+    it('should handle valid search query', () => {
+      const q: any = 'john';
+      const hasValidQuery = q !== undefined && q !== null && typeof q === 'string' && q.trim().length > 0;
+      expect(hasValidQuery).toBe(true);
+    });
+
+    it('should escape regex special characters', () => {
+      const input = 'john.doe+test@example.com';
+      const escaped = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      expect(escaped).toBe('john\\.doe\\+test@example\\.com');
+    });
+
+    it('should escape brackets and other special chars', () => {
+      const input = 'test[123]^$|pattern';
+      const escaped = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      expect(escaped).toBe('test\\[123\\]\\^\\$\\|pattern');
+    });
+
+    it('should validate basic search query structure', () => {
+      const searchTerm = 'test';
+      const searchQuery = {
+        $or: [
+          { fullName: { $regex: searchTerm, $options: 'i' } },
+          { email: { $regex: searchTerm, $options: 'i' } },
+          { phoneNumber: { $regex: searchTerm, $options: 'i' } }
+        ]
+      };
+      
+      expect(searchQuery.$or).toHaveLength(3);
+      expect(searchQuery.$or[0]).toHaveProperty('fullName');
+      expect(searchQuery.$or[1]).toHaveProperty('email');
+      expect(searchQuery.$or[2]).toHaveProperty('phoneNumber');
+    });
+  });
+
+  describe('Pagination with search logic', () => {
+    it('should calculate correct pagination with filtered results', () => {
+      const totalFilteredUsers = 25;
+      const n = 10; // perPage
+      const totalPages = Math.ceil(totalFilteredUsers / n);
+      
+      expect(totalPages).toBe(3);
+    });
+
+    it('should handle edge case with zero filtered results', () => {
+      const totalFilteredUsers = 0;
+      const n = 10;
+      const p = 1;
+      const totalPages = Math.ceil(totalFilteredUsers / n);
+      
+      expect(totalPages).toBe(0);
+      // Should not return out of range when totalPages is 0
+      expect(p > totalPages && totalPages !== 0).toBe(false);
+    });
+
+    it('should handle out of range page with filtered results', () => {
+      const totalFilteredUsers = 15;
+      const n = 10;
+      const p = 3; // requesting page 3 when only 2 pages exist
+      const totalPages = Math.ceil(totalFilteredUsers / n);
+      
+      expect(totalPages).toBe(2);
+      expect(p > totalPages && totalPages !== 0).toBe(true);
+    });
+  });
+});

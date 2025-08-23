@@ -149,4 +149,54 @@ describe('User Routes - Express Validator Integration', () => {
       expect(response.body.success).toBe(true);
     });
   });
+
+  describe('GET /api/users - Search Query Validation', () => {
+    it('should accept valid pagination parameters', async () => {
+      const response = await request(app)
+        .get('/api/users?n=5&p=1');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should accept valid search query parameter', async () => {
+      const response = await request(app)
+        .get('/api/users?q=john');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should accept search query with pagination', async () => {
+      const response = await request(app)
+        .get('/api/users?q=john&n=10&p=1');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should reject non-string search query', async () => {
+      const response = await request(app)
+        .get('/api/users?q[]=invalid');
+
+      expect(response.body.status).toBe('fail');
+      expect(response.body.message).toContain('Search query must be a string');
+    });
+
+    it('should reject invalid pagination parameters', async () => {
+      const response = await request(app)
+        .get('/api/users?n=0&p=-1');
+
+      expect(response.body.status).toBe('fail');
+      expect(response.body.message).toContain('Items per page must be between 1 and 100');
+    });
+
+    it('should accept empty search query', async () => {
+      const response = await request(app)
+        .get('/api/users?q=');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+  });
 });

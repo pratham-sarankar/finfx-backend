@@ -53,6 +53,10 @@ router.get(
     .optional()
     .isInt({ min: 1 })
     .withMessage("Page number must be at least 1"),
+  query("q")
+    .optional()
+    .isString()
+    .withMessage("Search query must be a string"),
   validate,
   getUsers
 );

@@ -218,10 +218,10 @@ export const updateUser = async (
       throw new AppError("Invalid user id ", 400, "invalid-id");
     }
 
-    const { fullName, email, phoneNumber, password } = req.body;
+    const { fullName, email, phoneNumber, password, status } = req.body;
 
     // Validate required fields (password is optional)
-    if (!fullName || !email || !phoneNumber) {
+    if (!fullName || !email || !phoneNumber || !status) {
       throw new AppError(
         "All fields except password are required",
         400,
@@ -230,7 +230,7 @@ export const updateUser = async (
     }
 
     // Build update object
-    const updateData: any = { fullName, email, phoneNumber };
+    const updateData: any = { fullName, email, phoneNumber, status };
 
     // Hash password if provided
     if (password) {

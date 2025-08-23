@@ -64,9 +64,7 @@ router.get(
 // Get single user by ID
 router.get(
   "/:id",
-  param("id")
-    .isMongoId()
-    .withMessage("Please provide a valid user ID"),
+  param("id").isMongoId().withMessage("Please provide a valid user ID"),
   validate,
   getUserById
 );
@@ -74,9 +72,7 @@ router.get(
 // Update user by ID
 router.put(
   "/:id",
-  param("id")
-    .isMongoId()
-    .withMessage("Please provide a valid user ID"),
+  param("id").isMongoId().withMessage("Please provide a valid user ID"),
   body("fullName")
     .optional()
     .isLength({ min: 2, max: 50 })
@@ -93,6 +89,10 @@ router.put(
     .optional()
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long"),
+  body("status")
+    .optional()
+    .isIn(["active", "inactive"])
+    .withMessage("Status must be either active or inactive"),
   validate,
   updateUser
 );
@@ -100,9 +100,7 @@ router.put(
 // Delete user by ID
 router.delete(
   "/:id",
-  param("id")
-    .isMongoId()
-    .withMessage("Please provide a valid user ID"),
+  param("id").isMongoId().withMessage("Please provide a valid user ID"),
   validate,
   deleteUser
 );

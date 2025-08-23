@@ -196,6 +196,15 @@ export const login = async (
       );
     }
 
+    // Check user status
+    if (user.status === "inactive") {
+      throw new AppError(
+        "Your account is inactive. Please contact the admin to activate your account.",
+        403,
+        "account-inactive"
+      );
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id },
@@ -212,6 +221,7 @@ export const login = async (
         email: user.email,
         phoneNumber: user.phoneNumber,
         isEmailVerified: user.isEmailVerified,
+        status: user.status,
         ...(user.phoneNumber && { isPhoneVerified: user.isPhoneVerified }),
       },
     });
@@ -273,6 +283,15 @@ export const googleAuth = async (
       });
 
       if (user) {
+        // Check user status before allowing Google authentication
+        if (user.status === "inactive") {
+          throw new AppError(
+            "Your account is inactive. Please contact the admin to activate your account.",
+            403,
+            "account-inactive"
+          );
+        }
+
         // Update user's Google profile if needed
         if (!user.googleId || user.googleId !== googleId) {
           user.googleId = googleId;
@@ -307,6 +326,7 @@ export const googleAuth = async (
           fullName: user.fullName,
           profilePicture: user.profilePicture,
           isEmailVerified: user.isEmailVerified,
+          status: user.status,
         },
       });
     } catch (error) {
@@ -504,6 +524,7 @@ export const getMe = async (
       profilePicture: user.profilePicture,
       isEmailVerified: user.isEmailVerified,
       isPhoneVerified: user.isPhoneVerified,
+      status: user.status,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });

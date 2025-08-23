@@ -1,5 +1,6 @@
 import express from "express";
-// import { auth } from "../middleware/auth";
+import { auth } from "../middleware/auth";
+import { requireAdmin } from "../middleware/rbac";
 import {
   createUser,
   getUserById,
@@ -13,7 +14,9 @@ import { body, param, query } from "express-validator";
 
 const router = express.Router();
 
-// router.use(auth);
+// All user CRUD routes require authentication and admin role
+router.use(auth);
+router.use(requireAdmin);
 
 // Create user
 router.post(

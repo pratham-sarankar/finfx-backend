@@ -1,5 +1,6 @@
 import express from "express";
 import { auth } from "../middleware/auth";
+import { requireUser } from "../middleware/rbac";
 import { AppError } from "../middleware/errorHandler";
 import BotSubscription from "../models/BotSubscription";
 import Bot from "../models/Bot";
@@ -11,10 +12,11 @@ const router = express.Router();
 
 // All subscription routes require authentication
 router.use(auth);
+router.use(requireUser);
 
 /**
  * @route POST /api/subscriptions
- * @desc Subscribe to a bot
+ * @desc Subscribe to a bot (users for themselves, admins for anyone)
  * @access Private
  */
 router.post(
@@ -33,13 +35,17 @@ router.post(
   body("lotSize")
     .isFloat({ min: 0.01 })
     .withMessage("Lot Size must be at least 0.01"),
+  body("userId")
+    .optional()
+    .isMongoId()
+    .withMessage("userId should be valid MongoDB ID."),
   validate,
   SubscriptionController.createSubscription
 );
 
 /**
  * @route GET /api/subscriptions
- * @desc Get user's subscriptions
+ * @desc Get user's subscriptions (or any user's if admin)
  * @access Private
  */
 router.get(
@@ -48,13 +54,17 @@ router.get(
     .optional()
     .isIn(["active", "paused", "expired"])
     .withMessage("Status must be one of 'active', 'paused', or 'expired'"),
+  query("userId")
+    .optional()
+    .isMongoId()
+    .withMessage("userId should be valid MongoDB ID."),
   validate,
   SubscriptionController.getUserSubscriptions
 );
 
 /**
  * @route GET /api/subscriptions/:id
- * @desc Get specific subscription
+ * @desc Get specific subscription (own subscription or any if admin)
  * @access Private
  */
 router.get(
@@ -67,10 +77,13 @@ router.get(
   try {
     const { id } = req.params;
 
-    const subscription = await BotSubscription.findOne({
-      _id: id,
-      userId: req.user._id,
-    })
+    // Build query - admin can access any subscription, users only their own
+    const query: any = { _id: id };
+    if (req.user.role !== 'admin') {
+      query.userId = req.user._id;
+    }
+
+    const subscription = await BotSubscription.findOne(query)
       .populate(
         "bot",
         "name description recommendedCapital performanceDuration script"
@@ -96,7 +109,7 @@ router.get(
 
 /**
  * @route PUT /api/subscriptions/:id
- * @desc Update a subscription (status, lotSize, etc.)
+ * @desc Update a subscription (status, lotSize, etc.) - own subscription or any if admin
  * @access Private
  */
 router.put(
@@ -118,10 +131,13 @@ router.put(
       const { id } = req.params;
       const { status, lotSize } = req.body;
 
-      const subscription = await BotSubscription.findOne({
-        _id: id,
-        userId: req.user._id,
-      });
+      // Build query - admin can update any subscription, users only their own
+      const query: any = { _id: id };
+      if (req.user.role !== 'admin') {
+        query.userId = req.user._id;
+      }
+
+      const subscription = await BotSubscription.findOne(query);
 
       if (!subscription) {
         throw new AppError("Subscription not found", 404, "not-found");
@@ -209,7 +225,7 @@ router.get(
 
 /**
  * @route DELETE /api/subscriptions/:id
- * @desc Delete a subscription (permanent removal)
+ * @desc Delete a subscription (permanent removal) - own subscription or any if admin
  * @access Private
  */
 router.delete(
@@ -222,10 +238,13 @@ router.delete(
   try {
     const { id } = req.params;
 
-    const subscription = await BotSubscription.findOneAndDelete({
-      _id: id,
-      userId: req.user._id,
-    });
+    // Build query - admin can delete any subscription, users only their own
+    const query: any = { _id: id };
+    if (req.user.role !== 'admin') {
+      query.userId = req.user._id;
+    }
+
+    const subscription = await BotSubscription.findOneAndDelete(query);
 
     if (!subscription) {
       throw new AppError(

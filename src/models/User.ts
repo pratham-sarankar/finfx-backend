@@ -20,6 +20,7 @@ export interface IUser extends Document {
   resetPasswordExpires?: Date;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  role: "admin" | "user";
   status: "active" | "inactive";
   createdAt: Date;
   updatedAt: Date;
@@ -88,6 +89,12 @@ const userSchema = new mongoose.Schema(
     isPhoneVerified: {
       type: Boolean,
       default: false,
+    },
+    role: {
+      type: String,
+      enum: ["admin", "user"],
+      default: "user",
+      required: [true, "User role is required"],
     },
     status: {
       type: String,

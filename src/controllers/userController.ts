@@ -67,14 +67,14 @@ export const createUser = async (
 };
 
 /**
- * Get all users with pagination
- * @route GET /api/users?n=10&p=1
+ * Get all users with pagination and optional search
+ * @route GET /api/users?n=10&p=1&q=search
  * @access Private (Admin)
- * @param {Request} req - Express request object with optional query params (n=perPage, p=page)
+ * @param {Request} req - Express request object with optional query params (n=perPage, p=page, q=search)
  * @param {Response} res - Express response object
  * @param {NextFunction} next - Express next middleware function
  * @returns {Promise<void>} JSON response with paginated user data
- * @description Retrieves users with pagination support. Default: 10 users per page, page 1
+ * @description Retrieves users with pagination and search support. Search filters by name, email, or phone. Default: 10 users per page, page 1
  */
 export const getUsers = async (
   req: Request,
@@ -85,13 +85,26 @@ export const getUsers = async (
     // Parse and validate pagination parameters
     let n = parseInt(req.query.n as string, 10); // Number of users per page
     let p = parseInt(req.query.p as string, 10); // Page number
+    const q = req.query.q as string; // Search query
 
     // Set defaults if not provided or invalid
     n = isNaN(n) || n <= 0 ? 10 : n;
     p = isNaN(p) || p <= 0 ? 1 : p;
 
-    // Calculate total users and pages
-    const totalUsers = await User.countDocuments();
+    // Build search query
+    const searchQuery: any = {};
+    if (q && q.trim()) {
+      // Escape special regex characters to prevent regex injection
+      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      searchQuery.$or = [
+        { fullName: { $regex: escapedQuery, $options: 'i' } },
+        { email: { $regex: escapedQuery, $options: 'i' } },
+        { phoneNumber: { $regex: escapedQuery, $options: 'i' } }
+      ];
+    }
+
+    // Calculate total users and pages with search filter
+    const totalUsers = await User.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalUsers / n);
 
     // If requested page is out of range, return empty array
@@ -106,8 +119,8 @@ export const getUsers = async (
       });
     }
 
-    // Fetch users with pagination, excluding sensitive fields
-    const users = await User.find()
+    // Fetch users with pagination and search filter, excluding sensitive fields
+    const users = await User.find(searchQuery)
       .select("-__v -password")
       .skip((p - 1) * n)
       .limit(n);

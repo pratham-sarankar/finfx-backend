@@ -2,6 +2,25 @@ import request from 'supertest';
 import express from 'express';
 import userRoutes from '../routes/userRoutes';
 
+// Mock the auth middleware to always authenticate as admin
+jest.mock('../middleware/auth', () => ({
+  auth: (req: any, _res: any, next: any) => {
+    req.user = {
+      _id: '507f1f77bcf86cd799439011',
+      email: 'admin@example.com',
+      role: 'admin'
+    };
+    next();
+  }
+}));
+
+// Mock the RBAC middleware to allow admin access
+jest.mock('../middleware/rbac', () => ({
+  requireAdmin: (_req: any, _res: any, next: any) => {
+    next();
+  }
+}));
+
 // Mock the controller functions since we're only testing validation
 jest.mock('../controllers/userController', () => ({
   createUser: (_req: any, res: any) => res.status(201).json({ success: true }),

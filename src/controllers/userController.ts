@@ -27,7 +27,7 @@ export const createUser = async (
   next: NextFunction
 ) => {
   try {
-    const { fullName, email, phoneNumber, password } = req.body;
+    const { fullName, email, phoneNumber, password, status, role } = req.body;
 
     // Note: Basic field validation is now handled by express-validator in routes
 
@@ -49,7 +49,14 @@ export const createUser = async (
       }
     }
 
-    const user = await User.create({ fullName, email, phoneNumber, password });
+    const user = await User.create({
+      fullName,
+      email,
+      phoneNumber,
+      password,
+      status,
+      role,
+    });
 
     // Transform response to exclude password and replace _id with id
     const userObj = user.toObject();
@@ -95,11 +102,11 @@ export const getUsers = async (
     const searchQuery: any = {};
     if (q && q.trim()) {
       // Escape special regex characters to prevent regex injection
-      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       searchQuery.$or = [
-        { fullName: { $regex: escapedQuery, $options: 'i' } },
-        { email: { $regex: escapedQuery, $options: 'i' } },
-        { phoneNumber: { $regex: escapedQuery, $options: 'i' } }
+        { fullName: { $regex: escapedQuery, $options: "i" } },
+        { email: { $regex: escapedQuery, $options: "i" } },
+        { phoneNumber: { $regex: escapedQuery, $options: "i" } },
       ];
     }
 
@@ -218,7 +225,7 @@ export const updateUser = async (
       throw new AppError("Invalid user id ", 400, "invalid-id");
     }
 
-    const { fullName, email, phoneNumber, password, status } = req.body;
+    const { fullName, email, phoneNumber, password, status, role } = req.body;
 
     // Validate required fields (password is optional)
     if (!fullName || !email || !phoneNumber || !status) {
@@ -230,7 +237,7 @@ export const updateUser = async (
     }
 
     // Build update object
-    const updateData: any = { fullName, email, phoneNumber, status };
+    const updateData: any = { fullName, email, phoneNumber, status, role };
 
     // Hash password if provided
     if (password) {

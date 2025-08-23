@@ -41,6 +41,16 @@ router.post(
     .withMessage("Password is required")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long"),
+  body("status")
+    .optional()
+    .default("active")
+    .isIn(["active", "inactive"])
+    .withMessage("Status must be either active or inactive"),
+  body("role")
+    .optional()
+    .default("user")
+    .isIn(["admin", "user"])
+    .withMessage("Role must be either admin or user"),
   validate,
   createUser
 );
@@ -56,10 +66,7 @@ router.get(
     .optional()
     .isInt({ min: 1 })
     .withMessage("Page number must be at least 1"),
-  query("q")
-    .optional()
-    .isString()
-    .withMessage("Search query must be a string"),
+  query("q").optional().isString().withMessage("Search query must be a string"),
   validate,
   getUsers
 );
@@ -96,6 +103,10 @@ router.put(
     .optional()
     .isIn(["active", "inactive"])
     .withMessage("Status must be either active or inactive"),
+  body("role")
+    .optional()
+    .isIn(["admin", "user"])
+    .withMessage("Role must be either admin or user"),
   validate,
   updateUser
 );

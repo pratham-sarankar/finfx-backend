@@ -222,6 +222,7 @@ export const login = async (
         phoneNumber: user.phoneNumber,
         isEmailVerified: user.isEmailVerified,
         status: user.status,
+        role: user.role,
         ...(user.phoneNumber && { isPhoneVerified: user.isPhoneVerified }),
       },
     });

@@ -19,7 +19,7 @@ import mongoose from "mongoose";
  * @returns {Promise<void>} JSON response with created user data
  * @throws {AppError} 400 - Missing required fields
  * @throws {AppError} 409 - Email already exists
- * @description Creates a new user with provided details, excluding password from response
+ * @description Creates a new user with provided details. Admin-created users are automatically email verified. Password is excluded from response.
  */
 export const createUser = async (
   req: Request,
@@ -56,6 +56,7 @@ export const createUser = async (
       password,
       status,
       role,
+      isEmailVerified: true, // Admin-created users are automatically verified
     });
 
     // Transform response to exclude password and replace _id with id
@@ -205,7 +206,7 @@ export const getUserById = async (
  * @returns {Promise<void>} JSON response with updated user data
  * @throws {AppError} 400 - Invalid user ID or missing required fields
  * @throws {AppError} 404 - User not found
- * @description Updates user information. Password is optional and will be hashed if provided
+ * @description Updates user information. Password and phoneNumber are optional. If phoneNumber is empty, it will be removed from the database.
  */
 export const updateUser = async (
   req: Request,
@@ -227,17 +228,29 @@ export const updateUser = async (
 
     const { fullName, email, phoneNumber, password, status, role } = req.body;
 
-    // Validate required fields (password is optional)
-    if (!fullName || !email || !phoneNumber || !status) {
+    // Validate required fields (password and phoneNumber are optional)
+    if (!fullName || !email || !status) {
       throw new AppError(
-        "All fields except password are required",
+        "Name, email, and status are required",
         400,
         "missing-fields"
       );
     }
 
     // Build update object
-    const updateData: any = { fullName, email, phoneNumber, status, role };
+    const updateData: any = { fullName, email, status, role };
+
+    // Only include phoneNumber if it's provided (not empty string or null)
+    if (
+      phoneNumber !== undefined &&
+      phoneNumber !== null &&
+      phoneNumber !== ""
+    ) {
+      updateData.phoneNumber = phoneNumber;
+    } else {
+      // Remove phoneNumber field from database if it's empty
+      updateData.$unset = { phoneNumber: 1 };
+    }
 
     // Hash password if provided
     if (password) {

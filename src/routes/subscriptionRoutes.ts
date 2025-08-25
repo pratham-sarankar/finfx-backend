@@ -15,6 +15,35 @@ router.use(auth);
 router.use(requireUser);
 
 /**
+ * @route POST /api/subscriptions
+ * @desc Subscribe to a bot (users for themselves, admins for anyone)
+ * @access Private
+ */
+router.post(
+  "/",
+  body("botId")
+    .notEmpty()
+    .withMessage("Bot ID is required")
+    .isMongoId()
+    .withMessage("botId should be valid MongoDB ID."),
+  body("botPackageId")
+    .notEmpty()
+    .withMessage("Bot Package ID is required")
+    .isMongoId()
+    .withMessage("botPackageId should be valid MongoDB ID."),
+  body("lotSize").notEmpty().withMessage("Lot Size is required"),
+  body("lotSize")
+    .isFloat({ min: 0.01 })
+    .withMessage("Lot Size must be at least 0.01"),
+  body("userId")
+    .optional()
+    .isMongoId()
+    .withMessage("userId should be valid MongoDB ID."),
+  validate,
+  SubscriptionController.createSubscription
+);
+
+/**
  * @route GET /api/subscriptions
  * @desc Get subscriptions with pagination and filters
  * @access Private (user sees own, admin sees all or specific user)
@@ -41,25 +70,6 @@ router.get(
   SubscriptionController.getUserSubscriptions
 );
 
-
-/**
- * @route GET /api/subscriptions
- * @desc Get user's subscriptions (or any user's if admin)
- * @access Private
- */
-router.get(
-  "/",
-  query("status")
-    .optional()
-    .isIn(["active", "paused", "expired"])
-    .withMessage("Status must be one of 'active', 'paused', or 'expired'"),
-  query("userId")
-    .optional()
-    .isMongoId()
-    .withMessage("userId should be valid MongoDB ID."),
-  validate,
-  SubscriptionController.getUserSubscriptions
-);
 
 /**
  * @route GET /api/subscriptions/:id

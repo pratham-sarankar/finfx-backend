@@ -14,35 +14,6 @@ const router = express.Router();
 router.use(auth);
 router.use(requireUser);
 
-// /**
-//  * @route POST /api/subscriptions
-//  * @desc Subscribe to a bot (users for themselves, admins for anyone)
-//  * @access Private
-//  */
-// router.post(
-//   "/",
-//   body("botId")
-//     .notEmpty()
-//     .withMessage("Bot ID is required")
-//     .isMongoId()
-//     .withMessage("botId should be valid MongoDB ID."),
-//   body("botPackageId")
-//     .notEmpty()
-//     .withMessage("Bot Package ID is required")
-//     .isMongoId()
-//     .withMessage("botPackageId should be valid MongoDB ID."),
-//   body("lotSize").notEmpty().withMessage("Lot Size is required"),
-//   body("lotSize")
-//     .isFloat({ min: 0.01 })
-//     .withMessage("Lot Size must be at least 0.01"),
-//   body("userId")
-//     .optional()
-//     .isMongoId()
-//     .withMessage("userId should be valid MongoDB ID."),
-//   validate,
-//   SubscriptionController.createSubscription
-// );
-
 /**
  * @route GET /api/subscriptions
  * @desc Get subscriptions with pagination and filters

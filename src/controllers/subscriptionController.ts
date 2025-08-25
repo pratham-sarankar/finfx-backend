@@ -81,60 +81,6 @@ export async function createSubscription(
   }
 }
 
-// /**
-//  * Get user's bot subscriptions or all subscriptions (admin only)
-//  * @route GET /api/subscriptions?status=active&userId=xxx (admin only)
-//  * @access Private
-//  * @param {Request} req - Express request object with optional status and userId query parameters
-//  * @param {Response} res - Express response object
-//  * @param {NextFunction} next - Express next middleware function
-//  * @returns {Promise<void>} JSON response with user's subscriptions
-//  * @description Retrieves subscriptions for the authenticated user, or for a specific user if admin
-//  */
-// export async function getUserSubscriptions(
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) {
-//   try {
-//     const { status, userId } = req.query;
-
-//     // Determine the target user ID
-//     let targetUserId = req.user._id;
-    
-//     // If userId is provided in query (admin viewing another user's subscriptions)
-//     if (userId) {
-//       // Only admin can view other users' subscriptions
-//       if (req.user.role !== 'admin') {
-//         throw new AppError(
-//           "Only administrators can view other users' subscriptions",
-//           403,
-//           "admin-required"
-//         );
-//       }
-//       targetUserId = userId;
-//     }
-
-//     // Build query for user's subscriptions
-//     const query: any = { userId: targetUserId };
-//     if (status) {
-//       query.status = status; // Filter by status if provided
-//     }
-
-//     // Fetch subscriptions with populated bot details, sorted by subscription date
-//     const subscriptions = await BotSubscription.find(query)
-//       .populate("bot")
-//       .sort({ subscribedAt: -1 });
-
-//     res.status(200).json({
-//       status: "success",
-//       data: subscriptions,
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// }
-
 /**
  * Get subscriptions with pagination and filters
  * @route GET /api/subscriptions?n=10&p=1&status=active&userId=xxx

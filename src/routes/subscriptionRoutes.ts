@@ -14,34 +14,62 @@ const router = express.Router();
 router.use(auth);
 router.use(requireUser);
 
+// /**
+//  * @route POST /api/subscriptions
+//  * @desc Subscribe to a bot (users for themselves, admins for anyone)
+//  * @access Private
+//  */
+// router.post(
+//   "/",
+//   body("botId")
+//     .notEmpty()
+//     .withMessage("Bot ID is required")
+//     .isMongoId()
+//     .withMessage("botId should be valid MongoDB ID."),
+//   body("botPackageId")
+//     .notEmpty()
+//     .withMessage("Bot Package ID is required")
+//     .isMongoId()
+//     .withMessage("botPackageId should be valid MongoDB ID."),
+//   body("lotSize").notEmpty().withMessage("Lot Size is required"),
+//   body("lotSize")
+//     .isFloat({ min: 0.01 })
+//     .withMessage("Lot Size must be at least 0.01"),
+//   body("userId")
+//     .optional()
+//     .isMongoId()
+//     .withMessage("userId should be valid MongoDB ID."),
+//   validate,
+//   SubscriptionController.createSubscription
+// );
+
 /**
- * @route POST /api/subscriptions
- * @desc Subscribe to a bot (users for themselves, admins for anyone)
- * @access Private
+ * @route GET /api/subscriptions
+ * @desc Get subscriptions with pagination and filters
+ * @access Private (user sees own, admin sees all or specific user)
  */
-router.post(
+router.get(
   "/",
-  body("botId")
-    .notEmpty()
-    .withMessage("Bot ID is required")
-    .isMongoId()
-    .withMessage("botId should be valid MongoDB ID."),
-  body("botPackageId")
-    .notEmpty()
-    .withMessage("Bot Package ID is required")
-    .isMongoId()
-    .withMessage("botPackageId should be valid MongoDB ID."),
-  body("lotSize").notEmpty().withMessage("Lot Size is required"),
-  body("lotSize")
-    .isFloat({ min: 0.01 })
-    .withMessage("Lot Size must be at least 0.01"),
-  body("userId")
+  query("n")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Items per page must be between 1 and 100"),
+  query("p")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page number must be at least 1"),
+  query("status")
+    .optional()
+    .isIn(["active", "paused", "expired"])
+    .withMessage("Status must be one of 'active', 'paused', or 'expired'"),
+  query("userId")
     .optional()
     .isMongoId()
     .withMessage("userId should be valid MongoDB ID."),
   validate,
-  SubscriptionController.createSubscription
+  SubscriptionController.getUserSubscriptions
 );
+
 
 /**
  * @route GET /api/subscriptions

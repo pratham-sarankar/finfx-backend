@@ -81,15 +81,64 @@ export async function createSubscription(
   }
 }
 
+// /**
+//  * Get user's bot subscriptions or all subscriptions (admin only)
+//  * @route GET /api/subscriptions?status=active&userId=xxx (admin only)
+//  * @access Private
+//  * @param {Request} req - Express request object with optional status and userId query parameters
+//  * @param {Response} res - Express response object
+//  * @param {NextFunction} next - Express next middleware function
+//  * @returns {Promise<void>} JSON response with user's subscriptions
+//  * @description Retrieves subscriptions for the authenticated user, or for a specific user if admin
+//  */
+// export async function getUserSubscriptions(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) {
+//   try {
+//     const { status, userId } = req.query;
+
+//     // Determine the target user ID
+//     let targetUserId = req.user._id;
+    
+//     // If userId is provided in query (admin viewing another user's subscriptions)
+//     if (userId) {
+//       // Only admin can view other users' subscriptions
+//       if (req.user.role !== 'admin') {
+//         throw new AppError(
+//           "Only administrators can view other users' subscriptions",
+//           403,
+//           "admin-required"
+//         );
+//       }
+//       targetUserId = userId;
+//     }
+
+//     // Build query for user's subscriptions
+//     const query: any = { userId: targetUserId };
+//     if (status) {
+//       query.status = status; // Filter by status if provided
+//     }
+
+//     // Fetch subscriptions with populated bot details, sorted by subscription date
+//     const subscriptions = await BotSubscription.find(query)
+//       .populate("bot")
+//       .sort({ subscribedAt: -1 });
+
+//     res.status(200).json({
+//       status: "success",
+//       data: subscriptions,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// }
+
 /**
- * Get user's bot subscriptions or all subscriptions (admin only)
- * @route GET /api/subscriptions?status=active&userId=xxx (admin only)
- * @access Private
- * @param {Request} req - Express request object with optional status and userId query parameters
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function
- * @returns {Promise<void>} JSON response with user's subscriptions
- * @description Retrieves subscriptions for the authenticated user, or for a specific user if admin
+ * Get subscriptions with pagination and filters
+ * @route GET /api/subscriptions?n=10&p=1&status=active&userId=xxx
+ * @access Private (User sees own, Admin can view all or by userId)
  */
 export async function getUserSubscriptions(
   req: Request,
@@ -97,40 +146,85 @@ export async function getUserSubscriptions(
   next: NextFunction
 ) {
   try {
-    const { status, userId } = req.query;
+    let { n, p, status, userId } = req.query;
 
-    // Determine the target user ID
-    let targetUserId = req.user._id;
-    
-    // If userId is provided in query (admin viewing another user's subscriptions)
+    // Parse pagination params
+    let perPage = parseInt(n as string, 10);
+    let page = parseInt(p as string, 10);
+    perPage = isNaN(perPage) || perPage <= 0 ? 10 : perPage;
+    page = isNaN(page) || page <= 0 ? 1 : page;
+
+    // Determine user scope
+    let query: any = {};
     if (userId) {
-      // Only admin can view other users' subscriptions
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== "admin") {
         throw new AppError(
           "Only administrators can view other users' subscriptions",
           403,
           "admin-required"
         );
       }
-      targetUserId = userId;
+      query.userId = userId;
+    } else if (req.user.role !== "admin") {
+    return  query.userId = req.user._id;
     }
 
-    // Build query for user's subscriptions
-    const query: any = { userId: targetUserId };
+    // Add status filter if provided
     if (status) {
-      query.status = status; // Filter by status if provided
+      query.status = status;
     }
 
-    // Fetch subscriptions with populated bot details, sorted by subscription date
-    const subscriptions = await BotSubscription.find(query)
-      .populate("bot")
-      .sort({ subscribedAt: -1 });
+    // Count total subscriptions
+    const totalSubscriptions = await BotSubscription.countDocuments(query);
+    const totalPages = Math.ceil(totalSubscriptions / perPage);
 
-    res.status(200).json({
-      status: "success",
-      data: subscriptions,
+    // If page is out of range
+    if (page > totalPages && totalPages !== 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        page,
+        perPage,
+        totalPages,
+        totalSubscriptions,
+      });
+    }
+
+    // Fetch subscriptions with population
+    const subscriptions = await BotSubscription.find(query)
+      .populate("userId", "fullName email") // only select name & email
+      .populate("botId", "name description") // example: bot details
+      .populate("botPackageId", "name price duration") // example: package details
+      .sort({ subscribedAt: -1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .select("-__v"); // exclude version key
+
+    // Transform response
+    const transformed = subscriptions.map((sub) => {
+      const obj = sub.toObject();
+      return {
+        id: obj._id,
+        status: obj.status,
+        lotSize: obj.lotSize,
+        subscribedAt: obj.subscribedAt,
+        expiresAt: obj.expiresAt,
+        user: obj.userId, // populated { fullName, email }
+        bot: obj.botId, // populated { name, description }
+        package: obj.botPackageId, // populated { name, price, duration }
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: transformed,
+      page,
+      perPage,
+      totalPages,
+      totalSubscriptions,
     });
   } catch (error) {
     next(error);
   }
 }
+

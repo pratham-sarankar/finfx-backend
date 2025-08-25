@@ -45,11 +45,19 @@ router.post(
 
 /**
  * @route GET /api/subscriptions
- * @desc Get user's subscriptions (or any user's if admin)
- * @access Private
+ * @desc Get subscriptions with pagination and filters
+ * @access Private (user sees own, admin sees all or specific user)
  */
 router.get(
   "/",
+  query("n")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Items per page must be between 1 and 100"),
+  query("p")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page number must be at least 1"),
   query("status")
     .optional()
     .isIn(["active", "paused", "expired"])
@@ -61,6 +69,7 @@ router.get(
   validate,
   SubscriptionController.getUserSubscriptions
 );
+
 
 /**
  * @route GET /api/subscriptions/:id

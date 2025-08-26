@@ -113,42 +113,30 @@ export const createBotPackage = async (
  *              transforming the response to use 'id' instead of '_id' and removing __v fields
  */
 export const getBotPackages = async (
-  _: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const botPackages = await BotPackage.find()
-      .populate("botId")
-      .populate("packageId")
+    const { botId } = req.query as { botId?: string };
+    const filter: any = {};
+    if (botId) {
+      filter.botId = botId;
+    }
+
+    const botPackages = await BotPackage.find(filter)
+      .populate("packageId", "name duration")
       .select("-__v");
 
     // Transform bot packages to improve response structure
-    const transformedBotPackages = botPackages.map((botPackage) => {
-      const botPackageObj = botPackage.toObject();
-      const transformedBotPackage: any = {
-        id: botPackageObj._id,
-        bot: {
-          ...botPackageObj.botId,
-          id: botPackageObj.botId._id,
-        },
-        package: {
-          ...botPackageObj.packageId,
-          id: botPackageObj.packageId._id
-        },
-        ...botPackageObj,
+    const transformedBotPackages = botPackages.map((bp) => {
+      const obj: any = bp.toObject();
+      return {
+        id: obj._id,
+        name: obj.packageId?.name,
+        duration: obj.packageId?.duration,
+        price: obj.price,
       };
-      
-      // Clean up unwanted fields for cleaner response
-      delete transformedBotPackage.package._id;
-      delete transformedBotPackage.bot._id;
-      delete transformedBotPackage._id;
-      delete transformedBotPackage.bot.__v;
-      delete transformedBotPackage.package.__v;
-      delete transformedBotPackage.packageId;
-      delete transformedBotPackage.botId;
-      
-      return transformedBotPackage;
     });
 
     return res.status(200).json({

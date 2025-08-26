@@ -4,6 +4,8 @@ import { requireUser } from "../middleware/rbac";
 import { AppError } from "../middleware/errorHandler";
 import BotSubscription from "../models/BotSubscription";
 import Bot from "../models/Bot";
+import BotPackage from "../models/BotPackage";
+import Package from "../models/Package";
 import validate from "../middleware/validate";
 import { body, query, param } from "express-validator";
 import * as SubscriptionController from "../controllers/subscriptionController";
@@ -26,6 +28,10 @@ router.post(
     .withMessage("Bot ID is required")
     .isMongoId()
     .withMessage("botId should be valid MongoDB ID."),
+body("status")
+.optional()
+.isIn(["active","paused","expired"])
+.withMessage("Status must be one of 'active', 'paused', or 'expired'"),
   body("botPackageId")
     .notEmpty()
     .withMessage("Bot Package ID is required")
@@ -134,11 +140,19 @@ router.put(
     .optional()
     .isFloat({ min: 0.01 })
     .withMessage("Lot Size must be a number >= 0.01"),
+  body("botId")
+    .optional()
+    .isMongoId()
+    .withMessage("botId should be valid MongoDB ID."),
+  body("botPackageId")
+    .optional()
+    .isMongoId()
+    .withMessage("botPackageId should be valid MongoDB ID."),
   validate,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { status, lotSize } = req.body;
+      const { status, lotSize, botId, botPackageId } = req.body;
 
       // Build query - admin can update any subscription, users only their own
       const query: any = { _id: id };
@@ -156,19 +170,77 @@ router.put(
       if (status) updateFields.status = status;
       if (lotSize) updateFields.lotSize = lotSize;
 
+      // If either botId or botPackageId provided, require both and validate
+      const botIdProvided = typeof botId !== 'undefined';
+      const botPackageIdProvided = typeof botPackageId !== 'undefined';
+      if (botIdProvided || botPackageIdProvided) {
+        if (!botIdProvided || !botPackageIdProvided) {
+          throw new AppError(
+            "Both botId and botPackageId are required when changing bot/package",
+            400,
+            "bot-and-package-required"
+          );
+        }
+
+        // Validate botPackage exists and belongs to provided botId
+        const botPackage = await BotPackage.findById(botPackageId).lean();
+        if (!botPackage) {
+          throw new AppError("Bot package not found", 404, "bot-package-not-found");
+        }
+        if (String(botPackage.botId) !== String(botId)) {
+          throw new AppError("Selected package does not belong to the bot", 400, "invalid-package");
+        }
+
+        // Optional: recalculate expiresAt using Package.duration
+        const pkg = await Package.findById(botPackage.packageId).lean();
+        if (pkg && typeof pkg.duration === 'number' && pkg.duration > 0) {
+          const newExpiresAt = new Date();
+          newExpiresAt.setDate(newExpiresAt.getDate() + pkg.duration);
+          updateFields.expiresAt = newExpiresAt;
+        }
+
+        updateFields.botId = botId;
+        updateFields.botPackageId = botPackageId;
+      }
+
       const updatedSubscription = await BotSubscription.findByIdAndUpdate(
         id,
         updateFields,
         { new: true }
-      );
+      )
+        .populate("userId", "fullName email")
+        .populate("botId", "name description")
+        .populate("botPackageId", "name price duration");
 
+      if (!updatedSubscription) {
+        throw new AppError("Subscription not found", 404, "not-found");
+      }
+
+      const obj: any = (updatedSubscription as any).toObject();
       const transformed = {
-        ...updatedSubscription!.toObject(),
-        id: updatedSubscription!._id,
+        id: obj._id,
+        status: obj.status,
+        lotSize: obj.lotSize,
+        subscribedAt: obj.subscribedAt,
+        expiresAt: obj.expiresAt,
+        user: obj.userId
+          ? { id: obj.userId._id, fullName: obj.userId.fullName, email: obj.userId.email }
+          : undefined,
+        bot: obj.botId
+          ? { id: obj.botId._id, name: obj.botId.name, description: obj.botId.description }
+          : undefined,
+        package: obj.botPackageId
+          ? {
+              id: obj.botPackageId._id,
+              name: obj.botPackageId.name,
+              price: obj.botPackageId.price,
+              duration: obj.botPackageId.duration,
+            }
+          : undefined,
       };
-      delete transformed._id;
+
       res.status(200).json({
-        status: "success",
+        success: true,
         message: "Subscription updated successfully",
         data: transformed,
       });

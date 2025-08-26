@@ -22,53 +22,101 @@ import { AppError } from "../middleware/errorHandler";
  * @throws {AppError} 403 - Insufficient permissions (non-admin trying to create for another user)
  * @description Creates a new subscription for a user to a specific bot with package duration
  */
+// export async function createSubscription(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) {
+//   try {
+//     const { botId, botPackageId, lotSize, userId } = req.body;
+
+//     // Determine the target user ID
+//     let targetUserId = req.user._id;
+    
+//     // If userId is provided in request body (admin creating for another user)
+//     if (userId) {
+//       // Only admin can create subscriptions for other users
+//       if (req.user.role !== 'admin') {
+//         throw new AppError(
+//           "Only administrators can create subscriptions for other users",
+//           403,
+//           "admin-required"
+//         );
+//       }
+//       targetUserId = userId;
+//     }
+
+//     // Fetch the bot package to get the package ID and validate existence
+//     const botPackage = await BotPackage.findById(botPackageId);
+//     if (!botPackage) {
+//       throw new AppError("Bot package not found", 404, "bot-package-not-found");
+//     }
+
+//     // Fetch the package details to get duration information
+//     const packageDetails = await Package.findById(botPackage.packageId);
+//     if (!packageDetails) {
+//       throw new AppError("Package not found", 404, "package-not-found");
+//     }
+
+//     // Calculate expiresAt date by adding duration days to current date
+//     const expiresAt = new Date();
+//     expiresAt.setDate(expiresAt.getDate() + packageDetails.duration);
+
+//     // Create new subscription (validation for active subscriptions is handled in the model pre-save hook)
+//     const subscription = await BotSubscription.create({
+//       userId: targetUserId,
+//       botId,
+//       botPackageId,
+//       lotSize,
+//       expiresAt,
+//     });
+
+//     res.status(201).json({
+//       status: "success",
+//       message: "Successfully subscribed to bot",
+//       data: subscription,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// }
+
 export async function createSubscription(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const { botId, botPackageId, lotSize, userId } = req.body;
+    const { botId, botPackageId, lotSize, userId, status } = req.body; // status include
 
-    // Determine the target user ID
     let targetUserId = req.user._id;
-    
-    // If userId is provided in request body (admin creating for another user)
     if (userId) {
-      // Only admin can create subscriptions for other users
       if (req.user.role !== 'admin') {
-        throw new AppError(
-          "Only administrators can create subscriptions for other users",
-          403,
-          "admin-required"
-        );
+        throw new AppError("Only administrators can create subscriptions for other users", 403, "admin-required");
       }
       targetUserId = userId;
     }
 
-    // Fetch the bot package to get the package ID and validate existence
     const botPackage = await BotPackage.findById(botPackageId);
     if (!botPackage) {
       throw new AppError("Bot package not found", 404, "bot-package-not-found");
     }
 
-    // Fetch the package details to get duration information
     const packageDetails = await Package.findById(botPackage.packageId);
     if (!packageDetails) {
       throw new AppError("Package not found", 404, "package-not-found");
     }
 
-    // Calculate expiresAt date by adding duration days to current date
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + packageDetails.duration);
 
-    // Create new subscription (validation for active subscriptions is handled in the model pre-save hook)
     const subscription = await BotSubscription.create({
       userId: targetUserId,
       botId,
       botPackageId,
       lotSize,
       expiresAt,
+      ...(status && ["active","paused","expired"].includes(status) ? { status } : {}), // persist provided status if valid
     });
 
     res.status(201).json({
@@ -136,28 +184,48 @@ export async function getUserSubscriptions(
       });
     }
 
+    
+
     // Fetch subscriptions with population
     const subscriptions = await BotSubscription.find(query)
-      .populate("userId", "fullName email") // only select name & email
-      .populate("botId", "name description") // example: bot details
-      .populate("botPackageId", "name price duration") // example: package details
-      .sort({ subscribedAt: -1 })
-      .skip((page - 1) * perPage)
-      .limit(perPage)
-      .select("-__v"); // exclude version key
+  .populate("userId", "fullName email")
+  .populate("botId", "name description")
+  .populate({
+    path: "botPackageId",
+    populate: {
+      path: "packageId", // yahan se name & duration milega
+      select: "name duration",
+    },
+    select: "price packageId", // botPackageId ke fields
+  })
+  .sort({ subscribedAt: -1 })
+  .skip((page - 1) * perPage)
+  .limit(perPage)
+  .select("-__v");
 
-    // Transform response
+    // Transform response to consistent shape
     const transformed = subscriptions.map((sub) => {
-      const obj = sub.toObject();
+      const obj: any = sub.toObject();
       return {
         id: obj._id,
         status: obj.status,
         lotSize: obj.lotSize,
         subscribedAt: obj.subscribedAt,
         expiresAt: obj.expiresAt,
-        user: obj.userId, // populated { fullName, email }
-        bot: obj.botId, // populated { name, description }
-        package: obj.botPackageId, // populated { name, price, duration }
+        user: obj.userId
+          ? { id: obj.userId._id, fullName: obj.userId.fullName, email: obj.userId.email }
+          : undefined,
+        bot: obj.botId
+          ? { id: obj.botId._id, name: obj.botId.name, description: obj.botId.description }
+          : undefined,
+        package: obj.botPackageId
+  ? {
+      id: obj.botPackageId._id,
+      name: obj.botPackageId.packageId?.name,
+      duration: obj.botPackageId.packageId?.duration,
+      price: obj.botPackageId.price,
+    }
+  : undefined,
       };
     });
 

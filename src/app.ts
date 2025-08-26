@@ -58,6 +58,7 @@ app.use("/api/signals", signalRoutes);
 app.use("/api/brokers", brokerRoutes);
 app.use("/api/packages", packageRoutes);
 app.use("/api/botPackages", botPackageRoutes);
+app.use("/api/bot-packages", botPackageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/platformCredentials", platformCredential);
 

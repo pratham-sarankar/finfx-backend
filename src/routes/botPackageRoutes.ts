@@ -14,20 +14,27 @@ import {
   getBotPackageByBotId
 } from "../controllers/botPackageController";
 import { auth } from "../middleware/auth";
+import { requireUser } from "../middleware/rbac";
 import validate from "../middleware/validate";
-import { body, param } from "express-validator";
+import { body, param, query } from "express-validator";
 
 const router = express.Router();
 
 // Apply authentication middleware to all bot package routes
 router.use(auth);
+router.use(requireUser);
 
 /**
  * @route GET /api/botPackages
  * @desc Get all bot packages with populated bot and package details
  * @access Private
  */
-router.get("/", getBotPackages);
+router.get(
+  "/",
+  query("botId").optional().isMongoId().withMessage("botId should be valid MongoDB ID."),
+  validate,
+  getBotPackages
+);
 
 /**
  * @route GET /api/botPackages/bot/:botId

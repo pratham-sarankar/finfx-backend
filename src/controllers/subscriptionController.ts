@@ -22,64 +22,6 @@ import { AppError } from "../middleware/errorHandler";
  * @throws {AppError} 403 - Insufficient permissions (non-admin trying to create for another user)
  * @description Creates a new subscription for a user to a specific bot with package duration
  */
-// export async function createSubscription(
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) {
-//   try {
-//     const { botId, botPackageId, lotSize, userId } = req.body;
-
-//     // Determine the target user ID
-//     let targetUserId = req.user._id;
-    
-//     // If userId is provided in request body (admin creating for another user)
-//     if (userId) {
-//       // Only admin can create subscriptions for other users
-//       if (req.user.role !== 'admin') {
-//         throw new AppError(
-//           "Only administrators can create subscriptions for other users",
-//           403,
-//           "admin-required"
-//         );
-//       }
-//       targetUserId = userId;
-//     }
-
-//     // Fetch the bot package to get the package ID and validate existence
-//     const botPackage = await BotPackage.findById(botPackageId);
-//     if (!botPackage) {
-//       throw new AppError("Bot package not found", 404, "bot-package-not-found");
-//     }
-
-//     // Fetch the package details to get duration information
-//     const packageDetails = await Package.findById(botPackage.packageId);
-//     if (!packageDetails) {
-//       throw new AppError("Package not found", 404, "package-not-found");
-//     }
-
-//     // Calculate expiresAt date by adding duration days to current date
-//     const expiresAt = new Date();
-//     expiresAt.setDate(expiresAt.getDate() + packageDetails.duration);
-
-//     // Create new subscription (validation for active subscriptions is handled in the model pre-save hook)
-//     const subscription = await BotSubscription.create({
-//       userId: targetUserId,
-//       botId,
-//       botPackageId,
-//       lotSize,
-//       expiresAt,
-//     });
-
-//     res.status(201).json({
-//       status: "success",
-//       message: "Successfully subscribed to bot",
-//       data: subscription,
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// }
 
 export async function createSubscription(
   req: Request,

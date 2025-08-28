@@ -33,8 +33,12 @@ export async function createSubscription(
 
     let targetUserId = req.user._id;
     if (userId) {
-      if (req.user.role !== 'admin') {
-        throw new AppError("Only administrators can create subscriptions for other users", 403, "admin-required");
+      if (req.user.role !== "admin") {
+        throw new AppError(
+          "Only administrators can create subscriptions for other users",
+          403,
+          "admin-required"
+        );
       }
       targetUserId = userId;
     }
@@ -58,7 +62,9 @@ export async function createSubscription(
       botPackageId,
       lotSize,
       expiresAt,
-      ...(status && ["active","paused","expired"].includes(status) ? { status } : {}), // persist provided status if valid
+      ...(status && ["active", "paused", "expired"].includes(status)
+        ? { status }
+        : {}), // persist provided status if valid
     });
 
     res.status(201).json({
@@ -102,7 +108,7 @@ export async function getUserSubscriptions(
       }
       query.userId = userId;
     } else if (req.user.role !== "admin") {
-    return  query.userId = req.user._id;
+      return (query.userId = req.user._id);
     }
 
     // Add status filter if provided
@@ -126,24 +132,22 @@ export async function getUserSubscriptions(
       });
     }
 
-    
-
     // Fetch subscriptions with population
     const subscriptions = await BotSubscription.find(query)
-  .populate("userId", "fullName email")
-  .populate("botId", "name description")
-  .populate({
-    path: "botPackageId",
-    populate: {
-      path: "packageId", // yahan se name & duration milega
-      select: "name duration",
-    },
-    select: "price packageId", // botPackageId ke fields
-  })
-  .sort({ subscribedAt: -1 })
-  .skip((page - 1) * perPage)
-  .limit(perPage)
-  .select("-__v");
+      .populate("userId", "fullName email")
+      .populate("botId", "name description")
+      .populate({
+        path: "botPackageId",
+        populate: {
+          path: "packageId", // yahan se name & duration milega
+          select: "name duration",
+        },
+        select: "price packageId", // botPackageId ke fields
+      })
+      .sort({ subscribedAt: -1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .select("-__v");
 
     // Transform response to consistent shape
     const transformed = subscriptions.map((sub) => {
@@ -155,19 +159,27 @@ export async function getUserSubscriptions(
         subscribedAt: obj.subscribedAt,
         expiresAt: obj.expiresAt,
         user: obj.userId
-          ? { id: obj.userId._id, fullName: obj.userId.fullName, email: obj.userId.email }
+          ? {
+              id: obj.userId._id,
+              fullName: obj.userId.fullName,
+              email: obj.userId.email,
+            }
           : undefined,
         bot: obj.botId
-          ? { id: obj.botId._id, name: obj.botId.name, description: obj.botId.description }
+          ? {
+              id: obj.botId._id,
+              name: obj.botId.name,
+              description: obj.botId.description,
+            }
           : undefined,
         package: obj.botPackageId
-  ? {
-      id: obj.botPackageId._id,
-      name: obj.botPackageId.packageId?.name,
-      duration: obj.botPackageId.packageId?.duration,
-      price: obj.botPackageId.price,
-    }
-  : undefined,
+          ? {
+              id: obj.botPackageId._id,
+              name: obj.botPackageId.packageId?.name,
+              duration: obj.botPackageId.packageId?.duration,
+              price: obj.botPackageId.price,
+            }
+          : undefined,
       };
     });
 
@@ -183,4 +195,3 @@ export async function getUserSubscriptions(
     next(error);
   }
 }
-

@@ -38,8 +38,8 @@ router.post(
     .withMessage("Recommended capital must be a positive number"),
   body("performanceDuration")
     .optional()
-    .isInt({ min: 1 })
-    .withMessage("Performance duration must be a positive integer"),
+    .isIn(["1D", "1W", "1M", "3M", "6M", "1Y", "ALL"])
+    .withMessage("Performance duration must be one of: 1D, 1W, 1M, 3M, 6M, 1Y, ALL"),
   body("currency")
     .optional()
     .isLength({ min: 3, max: 3 })

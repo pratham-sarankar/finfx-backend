@@ -65,37 +65,115 @@ export const createBot = async (
   }
 };
 
+// /**
+//  * Get all bots
+//  * @route GET /api/bots
+//  */
+// export const getAllBots = async (
+//   _req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     const bots = await Bot.find({}).select("-__v");
+
+//     // Transform response to convert _id to id
+//     const transformedBots = bots.map((bot) => {
+//       const botObj = bot.toObject();
+//       const transformedBot: any = {
+//         ...botObj,
+//         id: botObj._id,
+//       };
+//       delete transformedBot._id;
+//       return transformedBot;
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       data: transformedBots,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
 /**
- * Get all bots
- * @route GET /api/bots
+ * Get all bots with pagination and optional search
+ * @route GET /api/bots?n=10&p=1&q=search
+ * @access Private (Admin)
+ * @param {Request} req - Express request object with optional query params (n=perPage, p=page, q=search)
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with paginated bot data
+ * @description Retrieves bots with pagination and search support. 
+ * Search filters by bot name or description. Default: 10 bots per page, page 1.
  */
 export const getAllBots = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const bots = await Bot.find({}).select("-__v");
+    // Parse and validate pagination parameters
+    let n = parseInt(req.query.n as string, 10); // perPage
+    let p = parseInt(req.query.p as string, 10); // page
+    const q = req.query.q as string; // search query
+
+    n = isNaN(n) || n <= 0 ? 10 : n;
+    p = isNaN(p) || p <= 0 ? 1 : p;
+
+    // Build search query
+    const searchQuery: any = {};
+    if (q && q.trim()) {
+      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      searchQuery.$or = [
+        { name: { $regex: escapedQuery, $options: "i" } },
+        { description: { $regex: escapedQuery, $options: "i" } },
+      ];
+    }
+
+    // Count total bots
+    const totalBots = await Bot.countDocuments(searchQuery);
+    const totalPages = Math.ceil(totalBots / n);
+
+    // If requested page is out of range
+    if (p > totalPages && totalPages !== 0) {
+       res.status(200).json({
+        status: "success",
+        data: [],
+        page: p,
+        perPage: n,
+        totalPages,
+        totalBots,
+      });
+    }
+
+    // Fetch bots with pagination and search
+    const bots = await Bot.find(searchQuery)
+      .select("-__v")
+      .skip((p - 1) * n)
+      .limit(n);
 
     // Transform response to convert _id to id
     const transformedBots = bots.map((bot) => {
       const botObj = bot.toObject();
-      const transformedBot: any = {
-        ...botObj,
-        id: botObj._id,
-      };
-      delete transformedBot._id;
-      return transformedBot;
+      const { _id, __v, ...rest } = botObj;
+      return { ...rest, id: _id };
     });
 
     res.status(200).json({
       status: "success",
       data: transformedBots,
+      page: p,
+      perPage: n,
+      totalPages,
+      totalBots,
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 /**
  * Get a specific bot by ID

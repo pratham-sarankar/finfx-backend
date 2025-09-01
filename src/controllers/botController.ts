@@ -65,49 +65,6 @@ export const createBot = async (
   }
 };
 
-// /**
-//  * Get all bots
-//  * @route GET /api/bots
-//  */
-// export const getAllBots = async (
-//   _req: Request,
-//   res: Response,
-//   next: NextFunction
-// ): Promise<void> => {
-//   try {
-//     const bots = await Bot.find({}).select("-__v");
-
-//     // Transform response to convert _id to id
-//     const transformedBots = bots.map((bot) => {
-//       const botObj = bot.toObject();
-//       const transformedBot: any = {
-//         ...botObj,
-//         id: botObj._id,
-//       };
-//       delete transformedBot._id;
-//       return transformedBot;
-//     });
-
-//     res.status(200).json({
-//       status: "success",
-//       data: transformedBots,
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-/**
- * Get all bots with pagination and optional search
- * @route GET /api/bots?n=10&p=1&q=search
- * @access Private (Admin)
- * @param {Request} req - Express request object with optional query params (n=perPage, p=page, q=search)
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function
- * @returns {Promise<void>} JSON response with paginated bot data
- * @description Retrieves bots with pagination and search support. 
- * Search filters by bot name or description. Default: 10 bots per page, page 1.
- */
 export const getAllBots = async (
   req: Request,
   res: Response,

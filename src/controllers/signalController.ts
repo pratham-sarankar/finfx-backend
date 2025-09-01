@@ -485,9 +485,103 @@ const getPerformanceOverview = async (query: any) => {
   };
 };
 
+// /**
+//  * Get all signals with optional filtering
+//  * @route GET /api/signals
+//  */
+// export const getAllSignals = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     const {
+//       botId,
+//       direction,
+//       limit = 50,
+//       page = 1,
+//     } = req.query;
+
+//     // Build query
+//     const query: any = {};
+//     if (botId) query.botId = botId;
+//     if (direction && ["LONG", "SHORT"].includes(direction as string)) {
+//       query.direction = direction;
+//     }
+
+//     // Convert botId to ObjectId if it's a string (for aggregation compatibility)
+//     if (query.botId && typeof query.botId === "string") {
+//       query.botId = new mongoose.Types.ObjectId(query.botId);
+//     }
+
+//     // Add date filtering
+//     const dateQuery = buildDateQuery(req.query);
+//     Object.assign(query, dateQuery);
+
+//     // Pagination
+//     const skip = (Number(page) - 1) * Number(limit);
+
+//     // Get signals with pagination
+//     const signals = await Signal.find(query)
+//       .populate("botId", "name")
+//       .select("-__v")
+//       .sort({ signalTime: -1 })
+//       .skip(skip)
+//       .limit(Number(limit));
+
+//     // Get total count for pagination
+//     const totalSignals = await Signal.countDocuments(query);
+
+//     // Get performance overview
+//     const overview = await getPerformanceOverview(query);
+
+//     // Transform response
+//     const transformedSignals = signals.map((signal) => {
+//       const transformedSignal: any = {
+//         ...signal.toObject(),
+//         id: signal._id,
+//       };
+//       delete transformedSignal._id;
+
+//       // Transform botId to bot format
+//       if (transformedSignal.botId) {
+//         transformedSignal.bot = {
+//           id: transformedSignal.botId._id,
+//           name: transformedSignal.botId.name,
+//         };
+//         delete transformedSignal.botId;
+//       }
+
+//       return transformedSignal;
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       data: transformedSignals,
+//       performanceOverview: overview,
+//       pagination: {
+//         currentPage: Number(page),
+//         totalPages: Math.ceil(totalSignals / Number(limit)),
+//         totalSignals,
+//         hasNextPage: skip + signals.length < totalSignals,
+//         hasPrevPage: Number(page) > 1,
+//       },
+//     });
+//   } catch (error) {
+//     return next(error);
+//   }
+// };
+
 /**
- * Get all signals with optional filtering
- * @route GET /api/signals
+ * Get all signals with pagination and optional search
+ * @route GET /api/signals?limit=10&page=1&search=btc
+ * @access Private (Admin/User)
+ * @param {Request} req - Express request object with optional query params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @returns {Promise<void>} JSON response with paginated signal data
+ * @description Retrieves signals with pagination and search support.
+ * Search filters by pairName or botName.
  */
 export const getAllSignals = async (
   req: Request,
@@ -495,82 +589,79 @@ export const getAllSignals = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const {
-      botId,
-      direction,
-      limit = 50,
-      page = 1,
-    } = req.query;
+    // Parse query params
+    let limit = parseInt(req.query.limit as string, 10);
+    let page = parseInt(req.query.page as string, 10);
+    const search = req.query.search as string;
 
-    // Build query
+    // Defaults
+    limit = isNaN(limit) || limit <= 0 ? 10 : limit;
+    page = isNaN(page) || page <= 0 ? 1 : page;
+
+    // Build search query
     const query: any = {};
-    if (botId) query.botId = botId;
-    if (direction && ["LONG", "SHORT"].includes(direction as string)) {
-      query.direction = direction;
+    if (search && search.trim()) {
+      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.$or = [
+        { pairName: { $regex: escaped, $options: "i" } },
+        { botName: { $regex: escaped, $options: "i" } },
+      ];
     }
 
-    // Convert botId to ObjectId if it's a string (for aggregation compatibility)
-    if (query.botId && typeof query.botId === "string") {
-      query.botId = new mongoose.Types.ObjectId(query.botId);
+    // Count total signals
+    const totalSignals = await Signal.countDocuments(query);
+    const totalPages = Math.ceil(totalSignals / limit);
+
+    // If page out of range, return empty
+    if (page > totalPages && totalPages !== 0) {
+      res.status(200).json({
+        success: true,
+        data: [],
+        page,
+        perPage: limit,
+        totalPages,
+        totalSignals,
+      });
     }
 
-    // Add date filtering
-    const dateQuery = buildDateQuery(req.query);
-    Object.assign(query, dateQuery);
-
-    // Pagination
-    const skip = (Number(page) - 1) * Number(limit);
-
-    // Get signals with pagination
+    // Fetch signals with pagination
     const signals = await Signal.find(query)
       .populate("botId", "name")
       .select("-__v")
       .sort({ signalTime: -1 })
-      .skip(skip)
-      .limit(Number(limit));
+      .skip((page - 1) * limit)
+      .limit(limit);
 
-    // Get total count for pagination
-    const totalSignals = await Signal.countDocuments(query);
-
-    // Get performance overview
-    const overview = await getPerformanceOverview(query);
-
-    // Transform response
+    // Transform signals (replace _id with id)
     const transformedSignals = signals.map((signal) => {
-      const transformedSignal: any = {
-        ...signal.toObject(),
-        id: signal._id,
-      };
-      delete transformedSignal._id;
+      const obj: any = signal.toObject();
+      obj.id = obj._id;
+      delete obj._id;
 
-      // Transform botId to bot format
-      if (transformedSignal.botId) {
-        transformedSignal.bot = {
-          id: transformedSignal.botId._id,
-          name: transformedSignal.botId.name,
+      if (obj.botId) {
+        obj.bot = {
+          id: obj.botId._id,
+          name: obj.botId.name,
         };
-        delete transformedSignal.botId;
+        delete obj.botId;
       }
 
-      return transformedSignal;
+      return obj;
     });
 
-    res.status(200).json({
-      status: "success",
+     res.status(200).json({
+      success: true,
       data: transformedSignals,
-      performanceOverview: overview,
-      pagination: {
-        currentPage: Number(page),
-        totalPages: Math.ceil(totalSignals / Number(limit)),
-        totalSignals,
-        hasNextPage: skip + signals.length < totalSignals,
-        hasPrevPage: Number(page) > 1,
-      },
+      page,
+      perPage: limit,
+      totalPages,
+      totalSignals,
     });
   } catch (error) {
     return next(error);
   }
 };
+
 
 /**
  * Get all signals from bots the user has subscribed to

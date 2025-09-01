@@ -1,7 +1,7 @@
 {
-  "name": "zyrotech_backend",
+  "name": "finfx_backend",
   "version": "1.0.5",
-  "description": "Backend API for Zyrotech",
+  "description": "Backend API for Finfx",
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",

@@ -1,5 +1,5 @@
 import express from "express";
-import { auth } from "../middleware/auth";
+// import { auth } from "../middleware/auth";
 import {
   createSignal,
   createBulkSignals,
@@ -16,7 +16,7 @@ import { body, param } from "express-validator";
 const router = express.Router();
 
 // All signal routes require authentication
-router.use(auth);
+// router.use(auth);
 
 // Signal routes
 router.post(

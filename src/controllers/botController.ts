@@ -65,37 +65,72 @@ export const createBot = async (
   }
 };
 
-/**
- * Get all bots
- * @route GET /api/bots
- */
 export const getAllBots = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const bots = await Bot.find({}).select("-__v");
+    // Parse and validate pagination parameters
+    let n = parseInt(req.query.n as string, 10); // perPage
+    let p = parseInt(req.query.p as string, 10); // page
+    const q = req.query.q as string; // search query
+
+    n = isNaN(n) || n <= 0 ? 10 : n;
+    p = isNaN(p) || p <= 0 ? 1 : p;
+
+    // Build search query
+    const searchQuery: any = {};
+    if (q && q.trim()) {
+      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      searchQuery.$or = [
+        { name: { $regex: escapedQuery, $options: "i" } },
+        { description: { $regex: escapedQuery, $options: "i" } },
+      ];
+    }
+
+    // Count total bots
+    const totalBots = await Bot.countDocuments(searchQuery);
+    const totalPages = Math.ceil(totalBots / n);
+
+    // If requested page is out of range
+    if (p > totalPages && totalPages !== 0) {
+       res.status(200).json({
+        status: "success",
+        data: [],
+        page: p,
+        perPage: n,
+        totalPages,
+        totalBots,
+      });
+    }
+
+    // Fetch bots with pagination and search
+    const bots = await Bot.find(searchQuery)
+      .select("-__v")
+      .skip((p - 1) * n)
+      .limit(n);
 
     // Transform response to convert _id to id
     const transformedBots = bots.map((bot) => {
       const botObj = bot.toObject();
-      const transformedBot: any = {
-        ...botObj,
-        id: botObj._id,
-      };
-      delete transformedBot._id;
-      return transformedBot;
+      const { _id, __v, ...rest } = botObj;
+      return { ...rest, id: _id };
     });
 
     res.status(200).json({
       status: "success",
       data: transformedBots,
+      page: p,
+      perPage: n,
+      totalPages,
+      totalBots,
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 /**
  * Get a specific bot by ID

@@ -27,7 +27,8 @@ async function seed() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await User.findOneAndUpdate({ email: testUser.email }, testUser, {
+    const { _id: userId, ...userData } = testUser;
+    await User.findOneAndUpdate({ email: testUser.email }, userData, {
       upsert: true,
       setDefaultsOnInsert: true,
     });
@@ -87,9 +88,9 @@ async function seed() {
 
     const seededBots: any[] = [];
     for (const bot of bots) {
-      // Remove groupName from bot data before seeding
-      const { groupName, ...botData } = bot;
-      const seededBot = await Bot.findOneAndUpdate({ _id: bot._id }, botData, {
+      // Remove groupName and _id from bot data before seeding
+      const { groupName, _id: botId, ...botData } = bot;
+      const seededBot = await Bot.findOneAndUpdate({ _id: botId }, botData, {
         upsert: true,
         setDefaultsOnInsert: true,
         new: true,
@@ -170,9 +171,10 @@ console.log("Seeded signals for all bots");
     const packagesData = JSON.parse(fs.readFileSync(packagesPath, "utf8"));
     const seededPackages: any[] = [];
     for (const pkg of packagesData) {
+      const { _id: pkgId, ...pkgData } = pkg;
       const seededPkg = await Package.findOneAndUpdate(
         { name: pkg.name },
-        pkg,
+        pkgData,
         { upsert: true, setDefaultsOnInsert: true, new: true }
       );
       seededPackages.push(seededPkg);

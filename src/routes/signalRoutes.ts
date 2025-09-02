@@ -12,11 +12,12 @@ import {
 } from "../controllers/signalController";
 import validate from "../middleware/validate";
 import { body, param } from "express-validator";
+import { auth } from "../middleware/auth";
 
 const router = express.Router();
 
 // All signal routes require authentication
-// router.use(auth);
+router.use(auth);
 
 // Signal routes
 router.post(

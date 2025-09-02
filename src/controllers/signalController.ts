@@ -40,7 +40,7 @@ export const createSignal = async (
       profitLoss,
       profitLossR,
       trailCount,
-      pairName
+      pairName,
     } = req.body;
 
     // Validate required fields - only entryTime, entryPrice, and direction are required
@@ -52,12 +52,8 @@ export const createSignal = async (
       );
     }
 
-    if(!pairName){
-      throw new AppError(
-        "Please provide Pair Name",
-        400,
-        "missing-pair-name"
-      );
+    if (!pairName) {
+      throw new AppError("Please provide Pair Name", 400, "missing-pair-name");
     }
 
     // Validate direction
@@ -84,10 +80,18 @@ export const createSignal = async (
       throw new AppError("lotSize is required", 400, "lot-size-required");
     }
     if (typeof lotSize !== "number") {
-      throw new AppError("lotSize must be a number", 400, "lot-size-invalid-type");
+      throw new AppError(
+        "lotSize must be a number",
+        400,
+        "lot-size-invalid-type"
+      );
     }
     if (lotSize < 0.1) {
-      throw new AppError("lotSize must be at least 0.1", 400, "lot-size-too-small");
+      throw new AppError(
+        "lotSize must be at least 0.1",
+        400,
+        "lot-size-too-small"
+      );
     }
     // ---------------------------------------
 
@@ -225,7 +229,11 @@ export const createBulkSignals = async (
 
     for (const signal of signals) {
       if (!signal.pairName) {
-        throw new AppError("Each signal must include pairName", 400, "missing-pair-name");
+        throw new AppError(
+          "Each signal must include pairName",
+          400,
+          "missing-pair-name"
+        );
       }
     }
 
@@ -264,15 +272,8 @@ export const createBulkSignals = async (
  * Helper function to validate dates and build date query
  */
 const buildDateQuery = (queryParams: any) => {
-  const {
-    startDate,
-    endDate,
-    date,
-    today,
-    yesterday,
-    thisWeek,
-    thisMonth,
-  } = queryParams;
+  const { startDate, endDate, date, today, yesterday, thisWeek, thisMonth } =
+    queryParams;
 
   const dateQuery: any = {};
 
@@ -312,7 +313,10 @@ const buildDateQuery = (queryParams: any) => {
 
     // Date range filter
     if (startDate) {
-      dateQuery.signalTime.$gte = validateDate(startDate as string, "startDate");
+      dateQuery.signalTime.$gte = validateDate(
+        startDate as string,
+        "startDate"
+      );
     }
     if (endDate) {
       const endDateTime = validateDate(endDate as string, "endDate");
@@ -473,16 +477,18 @@ const getPerformanceOverview = async (query: any) => {
     },
   ]);
 
-  return overviewAgg[0] || {
-    totalSignals: 0,
-    totalLongSignals: 0,
-    totalShortSignals: 0,
-    highestProfit: 0,
-    highestLoss: 0,
-    totalPnL: 0,
-    consecutiveWins: 0,
-    consecutiveLosses: 0,
-  };
+  return (
+    overviewAgg[0] || {
+      totalSignals: 0,
+      totalLongSignals: 0,
+      totalShortSignals: 0,
+      highestProfit: 0,
+      highestLoss: 0,
+      totalPnL: 0,
+      consecutiveWins: 0,
+      consecutiveLosses: 0,
+    }
+  );
 };
 
 export const getAllSignals = async (
@@ -551,7 +557,7 @@ export const getAllSignals = async (
       return obj;
     });
 
-     res.status(200).json({
+    res.status(200).json({
       success: true,
       data: transformedSignals,
       page,
@@ -563,7 +569,6 @@ export const getAllSignals = async (
     return next(error);
   }
 };
-
 
 /**
  * Get all signals from bots the user has subscribed to
@@ -583,7 +588,8 @@ export const getUserSignals = async (
     } = req.query;
 
     // Get user ID from auth middleware
-    const userId = req.user.id;
+    console.log(req.user);
+    const userId = req.user._id;
 
     // Get all active bot subscriptions for the user
     const userSubscriptions = await BotSubscription.find({
@@ -899,11 +905,7 @@ export const getSignalsByBot = async (
 ): Promise<void> => {
   try {
     const { botId } = req.params;
-    const {
-      direction,
-      limit = 50,
-      page = 1,
-    } = req.query;
+    const { direction, limit = 50, page = 1 } = req.query;
 
     // Check if bot exists
     const bot = await Bot.findById(botId);

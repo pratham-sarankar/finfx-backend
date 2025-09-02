@@ -1,3 +1,4 @@
+
 import request from 'supertest';
 import express from 'express';
 import botRoutes from '../routes/botRoutes';
@@ -133,11 +134,13 @@ describe('Bot Routes - Express Validator Integration', () => {
           name: 'Test Bot',
           description: 'Test bot description that is long enough',
           recommendedCapital: 1000,
-          performanceDuration: 0
+          performanceDuration: "INVALID" // ❌ not in enum
         });
 
       expect(response.body.status).toBe('fail');
-      expect(response.body.message).toContain('Performance duration must be a positive integer');
+      expect(response.body.message).toContain(
+        'Performance duration must be one of: 1D, 1W, 1M, 3M, 6M, 1Y, ALL'
+      );
     });
 
     it('should reject invalid currency code', async () => {
@@ -161,7 +164,7 @@ describe('Bot Routes - Express Validator Integration', () => {
           name: 'Test Bot',
           description: 'Test bot description that is long enough',
           recommendedCapital: 1000,
-          performanceDuration: 30,
+          performanceDuration: "1M", // ✅ valid enum
           currency: 'USD',
           script: 'test script'
         });
@@ -226,12 +229,24 @@ describe('Bot Routes - Express Validator Integration', () => {
       expect(response.body.message).toContain('Recommended capital must be a positive number');
     });
 
+    it('should reject invalid performanceDuration', async () => {
+      const response = await request(app)
+        .put('/api/bots/507f1f77bcf86cd799439011')
+        .send({ performanceDuration: "INVALID" }); // ❌ not in enum
+
+      expect(response.body.status).toBe('fail');
+      expect(response.body.message).toContain(
+        'Performance duration must be one of: 1D, 1W, 1M, 3M, 6M, 1Y, ALL'
+      );
+    });
+
     it('should pass with valid update data', async () => {
       const response = await request(app)
         .put('/api/bots/507f1f77bcf86cd799439011')
         .send({
           name: 'Updated Bot',
-          description: 'Updated bot description that is long enough'
+          description: 'Updated bot description that is long enough',
+          performanceDuration: "6M" // ✅ valid enum
         });
 
       expect(response.status).toBe(200);

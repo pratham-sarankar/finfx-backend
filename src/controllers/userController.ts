@@ -4,6 +4,9 @@
  * Provides admin-level user management functionality with pagination and validation
  */
 import User from "../models/User";
+import BotSubscription from "../models/BotSubscription";
+import KYC from "../models/KYC";
+import PlatformCredential from "../models/PlatformCredential";
 import { AppError } from "../middleware/errorHandler";
 import bcrypt from "bcryptjs";
 import { Request, Response, NextFunction } from "express";
@@ -290,7 +293,7 @@ export const updateUser = async (
  * @returns {Promise<void>} JSON response confirming deletion
  * @throws {AppError} 400 - Invalid user ID format
  * @throws {AppError} 404 - User not found
- * @description Permanently deletes a user from the database
+ * @description Permanently deletes a user and all related resources from the database
  */
 export const deleteUser = async (
   req: Request,
@@ -310,8 +313,19 @@ export const deleteUser = async (
       throw new AppError("Invalid user id ", 400, "invalid-id");
     }
 
-    const user = await User.findByIdAndDelete(id);
+    // Check if user exists before deletion
+    const user = await User.findById(id);
     if (!user) throw new AppError("User not found", 404, "user-not-found");
+
+    // Delete related resources in parallel for better performance
+    await Promise.all([
+      BotSubscription.deleteMany({ userId: id }),
+      KYC.deleteMany({ userId: id }),
+      PlatformCredential.deleteMany({ userId: id })
+    ]);
+
+    // Delete the user
+    await User.findByIdAndDelete(id);
 
     res
       .status(200)
@@ -331,7 +345,7 @@ export const deleteUser = async (
  * @returns {Promise<void>} JSON response confirming deletions with count
  * @throws {AppError} 400 - Invalid request body or user ID format
  * @throws {AppError} 404 - Some or all users not found
- * @description Permanently deletes multiple users from the database
+ * @description Permanently deletes multiple users and all related resources from the database
  */
 export const deleteMultipleUsers = async (
   req: Request,
@@ -373,6 +387,13 @@ export const deleteMultipleUsers = async (
         "invalid-user-ids"
       );
     }
+
+    // Delete related resources for all users in parallel
+    await Promise.all([
+      BotSubscription.deleteMany({ userId: { $in: userIds } }),
+      KYC.deleteMany({ userId: { $in: userIds } }),
+      PlatformCredential.deleteMany({ userId: { $in: userIds } })
+    ]);
 
     // Delete users and get the result
     const deleteResult = await User.deleteMany({ _id: { $in: userIds } });

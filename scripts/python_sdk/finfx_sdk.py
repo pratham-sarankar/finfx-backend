@@ -249,10 +249,11 @@ class FinFXSDK:
                 return None
         
         # Validate direction (convert to uppercase for API)
-        direction = signal_data['direction'].lower()
-        if direction not in ['long', 'short']:
-            logger.error(f"Invalid direction: {signal_data['direction']}. Must be 'long' or 'short'")
+        direction = signal_data.get('direction')
+        if not direction or direction.lower() not in ['long', 'short']:
+            logger.error(f"Invalid direction: {signal_data.get('direction')}. Must be 'long' or 'short'")
             return None
+        direction = direction.lower()
         
         # Validate lotSize minimum
         if signal_data['lotSize'] < 0.1:
@@ -284,11 +285,11 @@ class FinFXSDK:
         # Validate direction if provided (convert to uppercase for API)
         api_data = update_data.copy()
         if 'direction' in update_data:
-            direction = update_data['direction'].lower()
-            if direction not in ['long', 'short']:
-                logger.error(f"Invalid direction: {update_data['direction']}. Must be 'long' or 'short'")
+            direction = update_data.get('direction')
+            if not direction or direction.lower() not in ['long', 'short']:
+                logger.error(f"Invalid direction: {update_data.get('direction')}. Must be 'long' or 'short'")
                 return None
-            api_data['direction'] = direction.upper()
+            api_data['direction'] = direction.lower().upper()
         
         # Validate lotSize if provided
         if 'lotSize' in update_data and update_data['lotSize'] < 0.1:
@@ -354,13 +355,13 @@ class FinFXSDK:
                     return None
             
             # Validate direction
-            direction = signal['direction'].lower()
-            if direction not in ['long', 'short']:
-                logger.error(f"Signal {i}: Invalid direction: {signal['direction']}. Must be 'long' or 'short'")
+            direction = signal.get('direction')
+            if not direction or direction.lower() not in ['long', 'short']:
+                logger.error(f"Signal {i}: Invalid direction: {signal.get('direction')}. Must be 'long' or 'short'")
                 return None
             
             # Convert direction to uppercase for API
-            signal['direction'] = direction.upper()
+            signal['direction'] = direction.lower().upper()
         
         bulk_data = {
             "botId": bot_id,

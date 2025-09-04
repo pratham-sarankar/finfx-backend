@@ -66,11 +66,11 @@ const signalSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: [true, "User ID is required"],
+      required: false,
     },
     lotSize: {
       type: Number,
-      required: [true, "Lot size is required"],
+      required: false,
       min: [0.01, "Lot size must be at least 0.01"],
     },
     stopLossPrice: {
@@ -149,11 +149,11 @@ const signalSchema = new mongoose.Schema(
     },
     pairName: {
       type: String,
-      required: [true, "Pair name is required"],
+      required: false,
       trim: true,
       minlength: [3, "Pair name must be at least 3 characters long"],
       maxlength: [50, "Pair name must be less than or equal to 50 characters"],
-    }
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt fields

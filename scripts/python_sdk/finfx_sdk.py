@@ -47,9 +47,9 @@ class FinFXSDK:
         Args:
             token_file (str): Path to file where auth token will be stored
         """
-        self.base_url = self._get_env_var("FINFX_BACKEND_URL", "http://localhost:3000")
-        self.admin_email = self._get_env_var("FINFX_ADMIN_EMAIL")
-        self.admin_password = self._get_env_var("FINFX_ADMIN_PASSWORD")
+        self.base_url = "https://finfx-backend-917312759089.asia-south2.run.app"
+        self.admin_email = "test@yopmail.com"
+        self.admin_password = "Test@123"
         self.token_file = token_file
         self.token = None
         self.token_expires_at = None
@@ -242,7 +242,7 @@ class FinFXSDK:
             Dict: API response if successful, None otherwise
         """
         # Validate required fields
-        required_fields = ['entryTime', 'entryPrice', 'direction', 'userId', 'lotSize', 'pairName']
+        required_fields = ['botId', 'entryTime', 'entryPrice','direction']
         for field in required_fields:
             if field not in signal_data:
                 logger.error(f"Missing required field: {field}")
@@ -255,10 +255,6 @@ class FinFXSDK:
             return None
         direction = direction.lower()
         
-        # Validate lotSize minimum
-        if signal_data['lotSize'] < 0.1:
-            logger.error(f"Invalid lotSize: {signal_data['lotSize']}. Must be at least 0.1")
-            return None
         
         # Convert direction to uppercase for API compatibility
         api_data = signal_data.copy()

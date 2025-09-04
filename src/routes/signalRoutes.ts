@@ -38,18 +38,15 @@ router.post(
     .isIn(["LONG", "SHORT"])
     .withMessage("Direction must be either LONG or SHORT"),
   body("userId")
-    .notEmpty()
-    .withMessage("User ID is required")
+    .optional()
     .isMongoId()
     .withMessage("User ID must be a valid MongoDB ID"),
   body("botId")
-    .notEmpty()
-    .withMessage("Bot ID is required")
+    .optional()
     .isMongoId()
     .withMessage("Bot ID must be a valid MongoDB ID"),
   body("lotSize")
-    .notEmpty()
-    .withMessage("Lot size is required")
+    .optional()
     .isFloat({ min: 0.01 })
     .withMessage("Lot size must be at least 0.01"),
   body("stopLossPrice")
@@ -61,8 +58,7 @@ router.post(
     .isFloat({ min: 0 })
     .withMessage("Target price must be a positive number"),
   body("pairName")
-    .notEmpty()
-    .withMessage("Pair name is required")
+    .optional()
     .isLength({ min: 3, max: 50 })
     .withMessage("Pair name must be between 3 and 50 characters"),
   validate,

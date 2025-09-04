@@ -35,8 +35,8 @@ router.post(
   body("direction")
     .notEmpty()
     .withMessage("Direction is required")
-    .isIn(["buy", "sell", "long", "short"])
-    .withMessage("Direction must be one of: buy, sell, long, short"),
+    .isIn(["LONG", "SHORT"])
+    .withMessage("Direction must be either LONG or SHORT"),
   body("userId")
     .optional()
     .isMongoId()
@@ -47,8 +47,8 @@ router.post(
     .withMessage("Bot ID must be a valid MongoDB ID"),
   body("lotSize")
     .optional()
-    .isFloat({ min: 0 })
-    .withMessage("Lot size must be a positive number"),
+    .isFloat({ min: 0.01 })
+    .withMessage("Lot size must be at least 0.01"),
   body("stopLossPrice")
     .optional()
     .isFloat({ min: 0 })
@@ -57,6 +57,10 @@ router.post(
     .optional()
     .isFloat({ min: 0 })
     .withMessage("Target price must be a positive number"),
+  body("pairName")
+    .optional()
+    .isLength({ min: 3, max: 50 })
+    .withMessage("Pair name must be between 3 and 50 characters"),
   validate,
   createSignal
 );
@@ -78,8 +82,8 @@ router.post(
   body("signals.*.direction")
     .notEmpty()
     .withMessage("Direction is required for all signals")
-    .isIn(["buy", "sell", "long", "short"])
-    .withMessage("Direction must be one of: buy, sell, long, short"),
+    .isIn(["LONG", "SHORT"])
+    .withMessage("Direction must be either LONG or SHORT for all signals"),
   validate,
   createBulkSignals
 );
@@ -104,8 +108,8 @@ router.put(
     .withMessage("Entry price must be a positive number"),
   body("direction")
     .optional()
-    .isIn(["buy", "sell", "long", "short"])
-    .withMessage("Direction must be one of: buy, sell, long, short"),
+    .isIn(["LONG", "SHORT"])
+    .withMessage("Direction must be either LONG or SHORT"),
   body("exitTime")
     .optional()
     .isISO8601()

@@ -11,7 +11,10 @@ Usage:
     signal_data = {
         "entryTime": "2024-01-15T10:30:00Z",
         "entryPrice": 50000.0,
-        "direction": "buy"
+        "direction": "long",
+        "userId": "507f1f77bcf86cd799439011",
+        "lotSize": 1.0,
+        "pairName": "BTC/USDT"
     }
     result = sdk.add_signal(signal_data)
 """
@@ -221,11 +224,12 @@ class FinFXSDK:
             signal_data (Dict): Signal data containing required fields:
                 - entryTime (str): ISO 8601 datetime string
                 - entryPrice (float): Entry price
-                - direction (str): 'buy', 'sell', 'long', or 'short'
+                - direction (str): 'long' or 'short'
+                - userId (str): MongoDB ObjectId (required)
+                - lotSize (float): Lot size (required, minimum 0.1)
+                - pairName (str): Trading pair name (required)
                 Optional fields:
-                - userId (str): MongoDB ObjectId
                 - botId (str): MongoDB ObjectId  
-                - lotSize (float): Lot size
                 - stopLossPrice (float): Stop loss price
                 - targetPrice (float): Target price
                 - tradeId (str): Trade identifier
@@ -233,26 +237,34 @@ class FinFXSDK:
                 - stoploss (float): Stop loss value
                 - target1r (float): First target
                 - target2r (float): Second target
-                - pairName (str): Trading pair name
                 
         Returns:
             Dict: API response if successful, None otherwise
         """
         # Validate required fields
-        required_fields = ['entryTime', 'entryPrice', 'direction']
+        required_fields = ['entryTime', 'entryPrice', 'direction', 'userId', 'lotSize', 'pairName']
         for field in required_fields:
             if field not in signal_data:
                 logger.error(f"Missing required field: {field}")
                 return None
         
-        # Validate direction
-        valid_directions = ['buy', 'sell', 'long', 'short']
-        if signal_data['direction'] not in valid_directions:
-            logger.error(f"Invalid direction: {signal_data['direction']}. Must be one of {valid_directions}")
+        # Validate direction (convert to uppercase for API)
+        direction = signal_data['direction'].lower()
+        if direction not in ['long', 'short']:
+            logger.error(f"Invalid direction: {signal_data['direction']}. Must be 'long' or 'short'")
             return None
         
-        logger.info(f"Adding signal with direction: {signal_data['direction']}")
-        return self._make_request('POST', '/api/signals', signal_data)
+        # Validate lotSize minimum
+        if signal_data['lotSize'] < 0.1:
+            logger.error(f"Invalid lotSize: {signal_data['lotSize']}. Must be at least 0.1")
+            return None
+        
+        # Convert direction to uppercase for API compatibility
+        api_data = signal_data.copy()
+        api_data['direction'] = direction.upper()
+        
+        logger.info(f"Adding signal with direction: {api_data['direction']}")
+        return self._make_request('POST', '/api/signals', api_data)
     
     def update_signal(self, signal_id: str, update_data: Dict[str, Any]) -> Optional[Dict]:
         """
@@ -269,15 +281,22 @@ class FinFXSDK:
             logger.error("Signal ID is required for update")
             return None
         
-        # Validate direction if provided
+        # Validate direction if provided (convert to uppercase for API)
+        api_data = update_data.copy()
         if 'direction' in update_data:
-            valid_directions = ['buy', 'sell', 'long', 'short']
-            if update_data['direction'] not in valid_directions:
-                logger.error(f"Invalid direction: {update_data['direction']}. Must be one of {valid_directions}")
+            direction = update_data['direction'].lower()
+            if direction not in ['long', 'short']:
+                logger.error(f"Invalid direction: {update_data['direction']}. Must be 'long' or 'short'")
                 return None
+            api_data['direction'] = direction.upper()
+        
+        # Validate lotSize if provided
+        if 'lotSize' in update_data and update_data['lotSize'] < 0.1:
+            logger.error(f"Invalid lotSize: {update_data['lotSize']}. Must be at least 0.1")
+            return None
         
         logger.info(f"Updating signal {signal_id}")
-        return self._make_request('PUT', f'/api/signals/{signal_id}', update_data)
+        return self._make_request('PUT', f'/api/signals/{signal_id}', api_data)
     
     def get_signal(self, signal_id: str) -> Optional[Dict]:
         """
@@ -326,8 +345,7 @@ class FinFXSDK:
             return None
         
         # Validate each signal
-        required_fields = ['entryTime', 'entryPrice', 'direction']
-        valid_directions = ['buy', 'sell', 'long', 'short']
+        required_fields = ['entryTime', 'entryPrice', 'direction', 'pairName']  # userId and lotSize handled by API
         
         for i, signal in enumerate(signals):
             for field in required_fields:
@@ -335,9 +353,14 @@ class FinFXSDK:
                     logger.error(f"Signal {i}: Missing required field: {field}")
                     return None
             
-            if signal['direction'] not in valid_directions:
-                logger.error(f"Signal {i}: Invalid direction: {signal['direction']}")
+            # Validate direction
+            direction = signal['direction'].lower()
+            if direction not in ['long', 'short']:
+                logger.error(f"Signal {i}: Invalid direction: {signal['direction']}. Must be 'long' or 'short'")
                 return None
+            
+            # Convert direction to uppercase for API
+            signal['direction'] = direction.upper()
         
         bulk_data = {
             "botId": bot_id,
@@ -358,7 +381,8 @@ def create_example_signal() -> Dict[str, Any]:
     return {
         "entryTime": datetime.now().isoformat() + "Z",
         "entryPrice": 50000.0,
-        "direction": "buy",
+        "direction": "long",
+        "userId": "507f1f77bcf86cd799439011",  # Example MongoDB ObjectId
         "lotSize": 1.0,
         "stopLossPrice": 48000.0,
         "targetPrice": 52000.0,

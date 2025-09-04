@@ -24,6 +24,25 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from finfx_sdk import FinFXSDK, create_example_signal
 
 
+def get_test_user_id():
+    """
+    Get a test user ID. In a real environment, you would:
+    1. Query the users API to get existing users
+    2. Create a test user if none exist
+    3. Use a known user ID from your system
+    
+    For now, we'll use a placeholder that you should replace with actual user ID
+    """
+    # This is a placeholder - replace with an actual user ID from your database
+    # You can get this by:
+    # 1. Looking at your database directly
+    # 2. Creating a user through the registration API
+    # 3. Using an existing user ID from your system
+    
+    # Example MongoDB ObjectId format - replace with real ID
+    return "507f1f77bcf86cd799439011"  # ⚠️ REPLACE WITH REAL USER ID
+
+
 def test_sdk():
     """Test the SDK functionality"""
     print("🧪 Testing FinFX Python SDK...")
@@ -65,9 +84,20 @@ def test_sdk():
         
         print("✅ Authentication successful")
         
+        # Get or use a test user ID
+        print("\n👤 Setting up test user...")
+        test_user_id = get_test_user_id()
+        if not test_user_id:
+            print("❌ Unable to get test user ID. Please ensure a user exists in the system.")
+            print("💡 You can create a user by registering through the frontend or API.")
+            return False
+        
+        print(f"✅ Using test user ID: {test_user_id}")
+        
         # Test signal creation
         print("\n📊 Testing signal creation...")
         test_signal = create_example_signal()
+        test_signal['userId'] = test_user_id  # Use the test user ID
         
         # Add some test-specific data
         test_signal.update({

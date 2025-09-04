@@ -45,8 +45,10 @@ sdk = FinFXSDK()
 signal_data = {
     "entryTime": datetime.now().isoformat() + "Z",
     "entryPrice": 50000.0,
-    "direction": "buy",
+    "direction": "long",
+    "userId": "507f1f77bcf86cd799439011",  # Valid user ID from your database
     "lotSize": 1.0,
+    "pairName": "BTC/USDT",
     "stopLossPrice": 48000.0,
     "targetPrice": 52000.0,
     "pairName": "BTC/USDT"
@@ -86,12 +88,14 @@ signals = [
     {
         "entryTime": "2024-01-15T10:30:00Z",
         "entryPrice": 50000.0,
-        "direction": "buy"
+        "direction": "long",
+        "pairName": "BTC/USDT"
     },
     {
         "entryTime": "2024-01-15T11:00:00Z", 
         "entryPrice": 49500.0,
-        "direction": "sell"
+        "direction": "short",
+        "pairName": "BTC/USDT"
     }
 ]
 
@@ -125,12 +129,14 @@ Adds a new signal to the system.
 **Required fields:**
 - `entryTime` (str): ISO 8601 datetime string (e.g., "2024-01-15T10:30:00Z")
 - `entryPrice` (float): Entry price
-- `direction` (str): One of "buy", "sell", "long", "short"
+- `direction` (str): Either "long" or "short"
+- `userId` (str): MongoDB ObjectId of a valid user in the system
+- `lotSize` (float): Lot size for the trade (minimum 0.1)
+- `pairName` (str): Trading pair name (e.g., "BTC/USDT")
 
 **Optional fields:**
 - `userId` (str): MongoDB ObjectId of the user
 - `botId` (str): MongoDB ObjectId of the bot
-- `lotSize` (float): Lot size for the trade
 - `stopLossPrice` (float): Stop loss price
 - `targetPrice` (float): Target price
 - `tradeId` (str): Trade identifier
@@ -276,9 +282,9 @@ def update_signal_on_exit(signal_id, exit_price, exit_reason):
         direction = signal['data'].get('direction')
         
         if entry_price and direction:
-            if direction in ['buy', 'long']:
+            if direction in ['long']:
                 pnl = exit_price - entry_price
-            else:
+            else:  # direction == 'short'
                 pnl = entry_price - exit_price
                 
             update_data["profitLoss"] = pnl

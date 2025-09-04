@@ -8,7 +8,6 @@ import Signal from "../models/Signal";
 import Bot from "../models/Bot";
 import BotSubscription from "../models/BotSubscription";
 import mongoose from "mongoose";
-import User from "../models/User";
 
 /**
  * Create a new signal
@@ -43,64 +42,10 @@ export const createSignal = async (
       pairName,
     } = req.body;
 
-    // Validate required fields - only entryTime, entryPrice, and direction are required
-    if (!entryTime || !entryPrice || !direction) {
-      throw new AppError(
-        "Please provide entryTime, entryPrice, and direction",
-        400,
-        "missing-required-fields"
-      );
-    }
-
-    if (!pairName) {
-      throw new AppError("Please provide Pair Name", 400, "missing-pair-name");
-    }
-
-    // Validate direction
-    if (!["LONG", "SHORT"].includes(direction)) {
-      throw new AppError(
-        "Direction must be either LONG or SHORT",
-        400,
-        "invalid-direction"
-      );
-    }
-
-    // -------- NEW FIELD VALIDATION --------
-    // Check if User exists (userId required)
-    if (!userId) {
-      throw new AppError("userId is required", 400, "user-id-required");
-    }
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new AppError("User not found", 404, "user-not-found");
-    }
-
-    // Validate lotSize
-    if (lotSize === undefined || lotSize === null) {
-      throw new AppError("lotSize is required", 400, "lot-size-required");
-    }
-    if (typeof lotSize !== "number") {
-      throw new AppError(
-        "lotSize must be a number",
-        400,
-        "lot-size-invalid-type"
-      );
-    }
-    if (lotSize < 0.1) {
-      throw new AppError(
-        "lotSize must be at least 0.1",
-        400,
-        "lot-size-too-small"
-      );
-    }
-    // ---------------------------------------
-
-    // Check if bot exists (if botId is provided)
-    if (botId) {
-      const bot = await Bot.findById(botId);
-      if (!bot) {
-        throw new AppError("Bot not found", 404, "bot-not-found");
-      }
+    // Check if bot exists (botId is now required)
+    const bot = await Bot.findById(botId);
+    if (!bot) {
+      throw new AppError("Bot not found", 404, "bot-not-found");
     }
 
     // Auto-generate tradeId if not provided
@@ -111,8 +56,8 @@ export const createSignal = async (
         .substr(2, 9)}`;
     }
 
-    // Check if signal with same tradeId already exists for this bot (if botId is provided)
-    if (botId && finalTradeId) {
+    // Check if signal with same tradeId already exists for this bot
+    if (finalTradeId) {
       const existingSignal = await Signal.findOne({
         botId,
         tradeId: finalTradeId,
@@ -126,8 +71,11 @@ export const createSignal = async (
       }
     }
 
-    // Prepare signal data with defaults for optional fields
+    // Prepare signal data with required fields
     const signalData: any = {
+      userId,
+      lotSize,
+      botId,
       direction,
       entryTime: new Date(entryTime),
       entryPrice,
@@ -135,7 +83,6 @@ export const createSignal = async (
     };
 
     // Add optional fields if provided
-    if (botId) signalData.botId = botId;
     if (finalTradeId) signalData.tradeId = finalTradeId;
     if (signalTime) signalData.signalTime = new Date(signalTime);
     if (stopLossPrice !== undefined) signalData.stopLossPrice = stopLossPrice;
@@ -787,24 +734,6 @@ export const updateSignal = async (
     const existingSignal = await Signal.findById(id);
     if (!existingSignal) {
       throw new AppError("Signal not found", 404, "signal-not-found");
-    }
-
-    // Validate direction if provided
-    if (direction && !["LONG", "SHORT"].includes(direction)) {
-      throw new AppError(
-        "Direction must be either LONG or SHORT",
-        400,
-        "invalid-direction"
-      );
-    }
-
-    // Validate pairName length if provided
-    if (pairName && (pairName.length < 3 || pairName.length > 50)) {
-      throw new AppError(
-        "Pair name must be between 3 and 50 characters",
-        400,
-        "invalid-pair-name"
-      );
     }
 
     // Prepare update object

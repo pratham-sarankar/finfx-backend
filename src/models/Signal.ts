@@ -84,6 +84,7 @@ const signalSchema = new mongoose.Schema(
     botId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bot",
+      required: [true, "Bot ID is required"],
     },
     tradeId: {
       type: String,

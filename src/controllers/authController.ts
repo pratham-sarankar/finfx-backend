@@ -246,6 +246,7 @@ export const login = async (
         isEmailVerified: user.isEmailVerified,
         status: user.status,
         role: user.role,
+        referralCode: user.referralCode,
         ...(user.phoneNumber && { isPhoneVerified: user.isPhoneVerified }),
       },
     });
@@ -567,6 +568,7 @@ export const getMe = async (
       isEmailVerified: user.isEmailVerified,
       isPhoneVerified: user.isPhoneVerified,
       status: user.status,
+      referralCode: user.referralCode,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });

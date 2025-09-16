@@ -4,6 +4,11 @@
  * Provides admin-level user management functionality with pagination and validation
  */
 import User from "../models/User";
+import GlobalSettings from "../models/GlobalSettings";
+import {
+  generateUniqueReferralCode,
+  DEFAULT_REFERRAL_POLICY,
+} from "../utils/referralUtils";
 import BotSubscription from "../models/BotSubscription";
 import KYC from "../models/KYC";
 import PlatformCredential from "../models/PlatformCredential";
@@ -52,6 +57,22 @@ export const createUser = async (
       }
     }
 
+    // Get referral policy from global settings, fallback to default
+    let referralRewardPolicy = DEFAULT_REFERRAL_POLICY;
+    try {
+      const globalDefault = await GlobalSettings.findOne({
+        key: "defaultReferralPolicy",
+      });
+      if (globalDefault && globalDefault.value) {
+        referralRewardPolicy = globalDefault.value;
+      }
+    } catch (err) {
+      // fallback already set
+    }
+
+    // Generate unique referral code
+    const referralCode = await generateUniqueReferralCode();
+
     const user = await User.create({
       fullName,
       email,
@@ -60,6 +81,8 @@ export const createUser = async (
       status,
       role,
       isEmailVerified: true, // Admin-created users are automatically verified
+      referralCode,
+      referralRewardPolicy,
     });
 
     // Transform response to exclude password and replace _id with id
@@ -321,7 +344,7 @@ export const deleteUser = async (
     await Promise.all([
       BotSubscription.deleteMany({ userId: id }),
       KYC.deleteMany({ userId: id }),
-      PlatformCredential.deleteMany({ userId: id })
+      PlatformCredential.deleteMany({ userId: id }),
     ]);
 
     // Delete the user
@@ -392,7 +415,7 @@ export const deleteMultipleUsers = async (
     await Promise.all([
       BotSubscription.deleteMany({ userId: { $in: userIds } }),
       KYC.deleteMany({ userId: { $in: userIds } }),
-      PlatformCredential.deleteMany({ userId: { $in: userIds } })
+      PlatformCredential.deleteMany({ userId: { $in: userIds } }),
     ]);
 
     // Delete users and get the result

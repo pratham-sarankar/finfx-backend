@@ -8,6 +8,11 @@ import { OAuth2Client } from "google-auth-library";
 import crypto from "crypto";
 import path from "path";
 import User from "../models/User";
+import GlobalSettings from "../models/GlobalSettings";
+import {
+  generateUniqueReferralCode,
+  DEFAULT_REFERRAL_POLICY,
+} from "../utils/referralUtils";
 import { AppError } from "../middleware/errorHandler";
 import { createOTP, verifyOTP, checkOTPCooldown } from "../utils/otpUtils";
 import { sendVerificationEmail } from "../utils/emailUtils";
@@ -42,11 +47,29 @@ export const signup = async (
       throw new AppError("User already exists", 409, "email-already-exists");
     }
 
+    // Get referral policy from global settings, fallback to default
+    let referralRewardPolicy = DEFAULT_REFERRAL_POLICY;
+    try {
+      const globalDefault = await GlobalSettings.findOne({
+        key: "defaultReferralPolicy",
+      });
+      if (globalDefault && globalDefault.value) {
+        referralRewardPolicy = globalDefault.value;
+      }
+    } catch (err) {
+      // fallback already set
+    }
+
+    // Generate unique referral code
+    const referralCode = await generateUniqueReferralCode();
+
     // Create new user
     const user = await User.create({
       fullName,
       email,
       password,
+      referralCode,
+      referralRewardPolicy,
     });
 
     res.status(201).json({
@@ -302,12 +325,30 @@ export const googleAuth = async (
         }
       } else {
         // Create new user
+        // Get referral policy from global settings, fallback to default
+        let referralRewardPolicy = DEFAULT_REFERRAL_POLICY;
+        try {
+          const globalDefault = await GlobalSettings.findOne({
+            key: "defaultReferralPolicy",
+          });
+          if (globalDefault && globalDefault.value) {
+            referralRewardPolicy = globalDefault.value;
+          }
+        } catch (err) {
+          // fallback already set
+        }
+
+        // Generate unique referral code
+        const referralCode = await generateUniqueReferralCode();
+
         user = await User.create({
           email,
           fullName: name || email.split("@")[0],
           googleId,
           profilePicture: picture,
           isEmailVerified: true, // Google emails are pre-verified
+          referralCode,
+          referralRewardPolicy,
         });
       }
 

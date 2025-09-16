@@ -4,8 +4,7 @@
  */
 import mongoose, { Document } from "mongoose";
 import bcrypt from "bcryptjs";
-import { generateUniqueReferralCode, DEFAULT_REFERRAL_POLICY } from "../utils/referralUtils";
-import GlobalSettings from "./GlobalSettings";
+// ...existing code...
 
 /**
  * Interface for referral reward policy
@@ -151,41 +150,6 @@ userSchema.pre("save", async function (next) {
     const salt = await bcrypt.genSalt(10);
     // Hash password
     this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error: any) {
-    next(error);
-  }
-});
-
-/**
- * Generate referral code and set default referral policy for new users
- */
-userSchema.pre("save", async function (next) {
-  // Only run for new users
-  if (!this.isNew) return next();
-
-  try {
-    // Generate unique referral code if not already set
-    if (!this.referralCode) {
-      this.referralCode = await generateUniqueReferralCode();
-    }
-
-    // Set default referral policy if not already set
-    if (!this.referralRewardPolicy) {
-      // Try to get global default policy, fallback to hardcoded default
-      try {
-        const globalDefault = await GlobalSettings.findOne({ key: 'defaultReferralPolicy' });
-        if (globalDefault && globalDefault.value) {
-          this.referralRewardPolicy = globalDefault.value;
-        } else {
-          this.referralRewardPolicy = DEFAULT_REFERRAL_POLICY;
-        }
-      } catch (error) {
-        // Fallback to hardcoded default if GlobalSettings query fails
-        this.referralRewardPolicy = DEFAULT_REFERRAL_POLICY;
-      }
-    }
-
     next();
   } catch (error: any) {
     next(error);

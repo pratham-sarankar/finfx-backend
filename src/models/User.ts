@@ -4,6 +4,15 @@
  */
 import mongoose, { Document } from "mongoose";
 import bcrypt from "bcryptjs";
+// ...existing code...
+
+/**
+ * Interface for referral reward policy
+ */
+export interface IReferralRewardPolicy {
+  type: "percentage" | "fixed";
+  value: number;
+}
 
 /**
  * Interface for User document
@@ -22,6 +31,8 @@ export interface IUser extends Document {
   isPhoneVerified: boolean;
   role: "admin" | "user";
   status: "active" | "inactive";
+  referralCode: string; // Unique referral code for this user
+  referralRewardPolicy: IReferralRewardPolicy; // Referral commission policy
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -100,6 +111,26 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["active", "inactive"],
       default: "active",
+    },
+    referralCode: {
+      type: String,
+      required: [true, "Referral code is required"],
+      unique: true,
+      trim: true,
+      minlength: [8, "Referral code must be at least 8 characters long"],
+      maxlength: [8, "Referral code must be exactly 8 characters long"],
+    },
+    referralRewardPolicy: {
+      type: {
+        type: String,
+        enum: ["percentage", "fixed"],
+        required: [true, "Referral reward type is required"],
+      },
+      value: {
+        type: Number,
+        required: [true, "Referral reward value is required"],
+        min: [0, "Referral reward value cannot be negative"],
+      },
     },
   },
   {

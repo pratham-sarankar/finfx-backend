@@ -9,6 +9,10 @@ import Signal from "../src/models/Signal";
 import Broker from "../src/models/Broker";
 import Package from "../src/models/Package";
 import BotPackage from "../src/models/BotPackage";
+import {
+  DEFAULT_REFERRAL_POLICY,
+  generateReferralCode,
+} from "../src/utils/referralUtils";
 
 async function seed() {
   try {
@@ -26,6 +30,8 @@ async function seed() {
       isEmailVerified: true,
       createdAt: new Date(),
       updatedAt: new Date(),
+      referralCode: generateReferralCode(),
+      referralRewardPolicy: DEFAULT_REFERRAL_POLICY,
     };
     const { _id: userId, ...userData } = testUser;
     await User.findOneAndUpdate({ email: testUser.email }, userData, {
@@ -118,21 +124,24 @@ async function seed() {
     }
 
     // 4. Seed signals
-const signalsPath = path.join(__dirname, "data", "signals.json");
-const signalsData = JSON.parse(fs.readFileSync(signalsPath, "utf8"));
-console.log(`Loading ${signalsData.length} signals from signals.json`);
+    const signalsPath = path.join(__dirname, "data", "signals.json");
+    const signalsData = JSON.parse(fs.readFileSync(signalsPath, "utf8"));
+    console.log(`Loading ${signalsData.length} signals from signals.json`);
 
-for (const bot of seededBots) {
-  console.log(`Seeding signals for bot: ${bot.name} (${bot._id})`);
+    for (const bot of seededBots) {
+      console.log(`Seeding signals for bot: ${bot.name} (${bot._id})`);
 
-  for (const signal of signalsData) {
-    const uniqueTradeId = `${signal.tradeId}_${bot.name.replace(/[^a-zA-Z0-9]/g, "")}`;
+      for (const signal of signalsData) {
+        const uniqueTradeId = `${signal.tradeId}_${bot.name.replace(
+          /[^a-zA-Z0-9]/g,
+          ""
+        )}`;
 
         const signalData = {
           botId: bot._id,
           tradeId: uniqueTradeId,
           direction: signal.direction,
-          pairName: signal.pairName, 
+          pairName: signal.pairName,
           signalTime: new Date(signal.signalTime),
           entryTime: new Date(signal.entryTime),
           entryPrice: signal.entryPrice,
@@ -149,22 +158,24 @@ for (const bot of seededBots) {
           updatedAt: new Date(signal.updatedAt),
         };
 
-    try {
-      await Signal.findOneAndUpdate(
-        { botId: bot._id, tradeId: uniqueTradeId },
-        signalData,
-        { upsert: true, setDefaultsOnInsert: true }
-      );
-    } catch (error) {
-      console.warn(`Failed to seed signal ${uniqueTradeId} for bot ${bot.name}:`, error);
+        try {
+          await Signal.findOneAndUpdate(
+            { botId: bot._id, tradeId: uniqueTradeId },
+            signalData,
+            { upsert: true, setDefaultsOnInsert: true }
+          );
+        } catch (error) {
+          console.warn(
+            `Failed to seed signal ${uniqueTradeId} for bot ${bot.name}:`,
+            error
+          );
+        }
+      }
+
+      console.log(`Completed seeding signals for bot: ${bot.name}`);
     }
-  }
 
-  console.log(`Completed seeding signals for bot: ${bot.name}`);
-}
-
-console.log("Seeded signals for all bots");
-
+    console.log("Seeded signals for all bots");
 
     // 5. Seed packages from packages.json instead of hardcoded array
     const packagesPath = path.join(__dirname, "data", "packages.json");
@@ -184,10 +195,10 @@ console.log("Seeded signals for all bots");
     // 6. Seed initial BotPackage prices for each bot and package
     // Example price logic: Monthly=100, Quarterly=270, Half Yearly=500, Yearly=900 (can be customized)
     const priceMap: Record<string, number> = {
-      "Monthly": 100,
-      "Quarterly": 270,
+      Monthly: 100,
+      Quarterly: 270,
       "Half Yearly": 500,
-      "Yearly": 900,
+      Yearly: 900,
     };
     for (const bot of seededBots) {
       for (const pkg of seededPackages) {
@@ -211,5 +222,3 @@ console.log("Seeded signals for all bots");
 }
 
 seed();
-
-

@@ -7,8 +7,6 @@
     "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
     "build": "tsc && cp -r src/views dist/",
-    "migrate": "node scripts/migrate.js",
-    "migrate:rollback": "node scripts/migrate.js rollback",
     "seed": "ts-node seed/seed.ts",
     "test": "jest",
     "test:watch": "jest --watch",

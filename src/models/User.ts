@@ -4,6 +4,16 @@
  */
 import mongoose, { Document } from "mongoose";
 import bcrypt from "bcryptjs";
+import { generateUniqueReferralCode, DEFAULT_REFERRAL_POLICY } from "../utils/referralUtils";
+import GlobalSettings from "./GlobalSettings";
+
+/**
+ * Interface for referral reward policy
+ */
+export interface IReferralRewardPolicy {
+  type: "percentage" | "fixed";
+  value: number;
+}
 
 /**
  * Interface for User document
@@ -22,6 +32,8 @@ export interface IUser extends Document {
   isPhoneVerified: boolean;
   role: "admin" | "user";
   status: "active" | "inactive";
+  referralCode: string; // Unique referral code for this user
+  referralRewardPolicy: IReferralRewardPolicy; // Referral commission policy
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -101,6 +113,26 @@ const userSchema = new mongoose.Schema(
       enum: ["active", "inactive"],
       default: "active",
     },
+    referralCode: {
+      type: String,
+      required: [true, "Referral code is required"],
+      unique: true,
+      trim: true,
+      minlength: [8, "Referral code must be at least 8 characters long"],
+      maxlength: [8, "Referral code must be exactly 8 characters long"],
+    },
+    referralRewardPolicy: {
+      type: {
+        type: String,
+        enum: ["percentage", "fixed"],
+        required: [true, "Referral reward type is required"],
+      },
+      value: {
+        type: Number,
+        required: [true, "Referral reward value is required"],
+        min: [0, "Referral reward value cannot be negative"],
+      },
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
@@ -119,6 +151,41 @@ userSchema.pre("save", async function (next) {
     const salt = await bcrypt.genSalt(10);
     // Hash password
     this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error: any) {
+    next(error);
+  }
+});
+
+/**
+ * Generate referral code and set default referral policy for new users
+ */
+userSchema.pre("save", async function (next) {
+  // Only run for new users
+  if (!this.isNew) return next();
+
+  try {
+    // Generate unique referral code if not already set
+    if (!this.referralCode) {
+      this.referralCode = await generateUniqueReferralCode();
+    }
+
+    // Set default referral policy if not already set
+    if (!this.referralRewardPolicy) {
+      // Try to get global default policy, fallback to hardcoded default
+      try {
+        const globalDefault = await GlobalSettings.findOne({ key: 'defaultReferralPolicy' });
+        if (globalDefault && globalDefault.value) {
+          this.referralRewardPolicy = globalDefault.value;
+        } else {
+          this.referralRewardPolicy = DEFAULT_REFERRAL_POLICY;
+        }
+      } catch (error) {
+        // Fallback to hardcoded default if GlobalSettings query fails
+        this.referralRewardPolicy = DEFAULT_REFERRAL_POLICY;
+      }
+    }
+
     next();
   } catch (error: any) {
     next(error);

@@ -9,6 +9,8 @@ import Signal from "../src/models/Signal";
 import Broker from "../src/models/Broker";
 import Package from "../src/models/Package";
 import BotPackage from "../src/models/BotPackage";
+import GlobalSettings from "../src/models/GlobalSettings";
+import { DEFAULT_REFERRAL_POLICY } from "../src/utils/referralUtils";
 
 async function seed() {
   try {
@@ -200,6 +202,19 @@ console.log("Seeded signals for all bots");
       }
     }
     console.log("Seeded initial BotPackage prices for each bot");
+
+    // 7. Seed global default referral policy
+    const existingReferralPolicy = await GlobalSettings.findOne({ key: 'defaultReferralPolicy' });
+    if (!existingReferralPolicy) {
+      await GlobalSettings.create({
+        key: 'defaultReferralPolicy',
+        value: DEFAULT_REFERRAL_POLICY,
+        description: 'Default referral reward policy for new users (10% percentage-based commission)'
+      });
+      console.log("Seeded global default referral policy");
+    } else {
+      console.log("Global default referral policy already exists");
+    }
 
     await mongoose.disconnect();
     console.log("Disconnected from MongoDB");

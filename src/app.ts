@@ -18,6 +18,7 @@ import packageRoutes from "./routes/packageRoutes"
 import botPackageRoutes from "./routes/botPackageRoutes"
 import userRoutes from "./routes/userRoutes"
 import platformCredential from "./routes/platformCredentials";
+import referralRoutes from "./routes/referralRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import { verifySMTPConnection } from "./utils/emailUtils";
 import { getResetPasswordPage } from "./controllers/authController";
@@ -61,6 +62,7 @@ app.use("/api/botPackages", botPackageRoutes);
 app.use("/api/bot-packages", botPackageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/platformCredentials", platformCredential);
+app.use("/api/referrals", referralRoutes);
 
 // Health check endpoint
 app.get("/", (_req: Request, res: Response) => {

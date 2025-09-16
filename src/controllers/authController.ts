@@ -13,6 +13,7 @@ import {
   generateUniqueReferralCode,
   DEFAULT_REFERRAL_POLICY,
 } from "../utils/referralUtils";
+import { createReferralEntry } from "./referralController";
 import { AppError } from "../middleware/errorHandler";
 import { createOTP, verifyOTP, checkOTPCooldown } from "../utils/otpUtils";
 import { sendVerificationEmail } from "../utils/emailUtils";
@@ -37,7 +38,7 @@ export const signup = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, referralCode: providedReferralCode } = req.body;
 
     // Note: Basic validation is now handled by express-validator in routes
 
@@ -71,6 +72,17 @@ export const signup = async (
       referralCode,
       referralRewardPolicy,
     });
+
+    // Create referral entry if referral code was provided
+    if (providedReferralCode) {
+      try {
+        await createReferralEntry(providedReferralCode, (user._id as any).toString());
+        // Note: Referral creation failure does not block signup
+      } catch (error) {
+        console.error("Error creating referral entry during signup:", error);
+        // Continue with successful signup even if referral creation fails
+      }
+    }
 
     res.status(201).json({
       message: "Account created. Please verify your email.",

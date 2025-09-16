@@ -49,6 +49,12 @@ router.post(
     .withMessage("Password is required")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long"),
+  body("referralCode")
+    .optional()
+    .isLength({ min: 8, max: 8 })
+    .withMessage("Referral code must be exactly 8 characters long")
+    .matches(/^[A-Z0-9]+$/)
+    .withMessage("Referral code must contain only uppercase letters and numbers"),
   validate,
   signup
 );
